@@ -153,7 +153,7 @@ const databaseLoader = (http, db, models) => {
 module.exports = () => {
     const http = require('http');
     const mongoose = require('mongoose');
-    mongoose.connect('mongodb://dbadmin:dbadmin@127.0.0.1:27017/block-explorer?authSource=admin', {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {
+    mongoose.connect('mongodb://myUserAdmin:dbadmin@127.0.0.1:27017/block-explorer?authSource=admin', {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {
 
         if(error) console.log(error)
         else{

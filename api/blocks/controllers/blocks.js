@@ -25,7 +25,7 @@ module.exports = {
         let results = await strapi.query('blocks').model
             .find({}, { "id": 0, "_id": 0, "__v": 0})
             .sort('-blockNum')
-            .limit(25)
+            .limit(5)
 
         return results.map(result => {
             result = removeID(sanitizeEntity(result, { model: strapi.models.blocks }))
