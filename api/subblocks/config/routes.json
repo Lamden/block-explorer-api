@@ -1,0 +1,52 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/subblocks",
+      "handler": "subblocks.find",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/subblocks/count",
+      "handler": "subblocks.count",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/subblocks/:id",
+      "handler": "subblocks.findOne",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/subblocks",
+      "handler": "subblocks.create",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/subblocks/:id",
+      "handler": "subblocks.update",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/subblocks/:id",
+      "handler": "subblocks.delete",
+      "config": {
+        "policies": []
+      }
+    }
+  ]
+}

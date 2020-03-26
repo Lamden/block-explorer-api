@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "connection": "default",
+  "collectionName": "subblocks",
+  "info": {
+    "name": "subblocks"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true
+  },
+  "attributes": {
+    "blockNum": {
+      "type": "integer"
+    },
+    "subBlockNum": {
+      "type": "integer"
+    },
+    "inputHash": {
+      "type": "string"
+    },
+    "merkleLeaves": {
+      "type": "json"
+    },
+    "prevBlockHash": {
+      "type": "string"
+    },
+    "signatures": {
+      "type": "json"
+    },
+    "numOfTransactions": {
+      "type": "integer"
+    },
+    "transactions": {
+      "type": "json"
+    }
+  }
+}

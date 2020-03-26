@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "connection": "default",
+  "collectionName": "state",
+  "info": {
+    "name": "state"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true
+  },
+  "attributes": {
+    "rawKey": {
+      "type": "string"
+    },
+    "contractName": {
+      "type": "string"
+    },
+    "functionName": {
+      "type": "string"
+    },
+    "key": {
+      "type": "string"
+    },
+    "value": {
+      "type": "string"
+    },
+    "blockNum": {
+      "type": "integer"
+    },
+    "hash": {
+      "type": "string"
+    },
+    "subBlockNum": {
+      "type": "integer"
+    }
+  }
+}

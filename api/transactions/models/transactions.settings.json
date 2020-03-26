@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "connection": "default",
+  "collectionName": "transactions",
+  "info": {
+    "name": "transactions"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true
+  },
+  "attributes": {
+    "hash": {
+      "type": "string",
+      "unique": true,
+      "required": true
+    },
+    "stampsUsed": {
+      "default": 0,
+      "type": "integer"
+    },
+    "status": {
+      "type": "integer"
+    },
+    "transaction": {
+      "type": "json"
+    },
+    "state": {
+      "type": "json"
+    },
+    "blockNum": {
+      "type": "integer",
+      "required": false
+    },
+    "nonce": {
+      "type": "integer"
+    },
+    "processor": {
+      "type": "string"
+    },
+    "sender": {
+      "type": "string"
+    },
+    "stampsSupplied": {
+      "type": "integer"
+    },
+    "kwargs": {
+      "type": "json"
+    },
+    "contractName": {
+      "type": "string"
+    },
+    "functionName": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "datetime"
+    },
+    "signature": {
+      "type": "string"
+    },
+    "numOfStateChanges": {
+      "type": "integer"
+    }
+  }
+}

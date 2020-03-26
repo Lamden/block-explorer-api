@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "connection": "default",
+  "collectionName": "blocks",
+  "info": {
+    "name": "blocks"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true
+  },
+  "attributes": {
+    "blockNum": {
+      "required": true,
+      "unique": true,
+      "type": "integer"
+    },
+    "hash": {
+      "type": "string",
+      "private": false,
+      "required": true,
+      "unique": true
+    },
+    "previous": {
+      "type": "string"
+    },
+    "numOfTransactions": {
+      "type": "integer",
+      "default": 0
+    },
+    "transactions": {
+      "type": "json"
+    },
+    "numOfSubBlocks": {
+      "type": "integer"
+    }
+  }
+}
