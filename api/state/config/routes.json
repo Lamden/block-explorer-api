@@ -10,7 +10,31 @@
     },
     {
       "method": "GET",
-      "path": "/states/:contractName",
+      "path": "/states/topwallets",
+      "handler": "state.getTopWallets",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/states/totalcontracts",
+      "handler": "state.getTotalContracts",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/states/totaladdresses",
+      "handler": "state.getTotalAddresses",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/states/history/:contractName",
       "handler": "state.getContractName",
       "config": {
         "policies": []
@@ -18,16 +42,24 @@
     },
     {
       "method": "GET",
-      "path": "/states/:contractName/:functionName",
-      "handler": "state.getFunctionName",
+      "path": "/states/history/:contractName/:variableName",
+      "handler": "state.getVariableName",
       "config": {
         "policies": []
       }
     },
     {
       "method": "GET",
-      "path": "/states/:contractName/:functionName/:key",
+      "path": "/states/history/:contractName/:variableName/:key",
       "handler": "state.getKey",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/states/balances/:key",
+      "handler": "state.getCurrencyBalance",
       "config": {
         "policies": []
       }

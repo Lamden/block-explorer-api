@@ -26,7 +26,7 @@
     },
     {
       "method": "GET",
-      "path": "/transactions/:hash",
+      "path": "/transactions/get/:hash",
       "handler": "transactions.findOne",
       "config": {
         "policies": []

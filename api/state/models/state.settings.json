@@ -16,7 +16,7 @@
     "contractName": {
       "type": "string"
     },
-    "functionName": {
+    "variableName": {
       "type": "string"
     },
     "key": {

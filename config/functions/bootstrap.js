@@ -104,7 +104,7 @@ const databaseLoader = (http, db, models) => {
                                 subBlockNum: sb.subBlockNum,
                                 rawKey: s.key,
                                 contractName: s.key.split(":")[0].split(".")[0],
-                                functionName: s.key.split(":")[0].split(".")[1],
+                                variableName: s.key.split(":")[0].split(".")[1],
                                 key: s.key.split(/:(.+)/)[1],
                                 value: s.value,
                             }).save();
@@ -168,6 +168,7 @@ module.exports = () => {
                 transaction:  String, 
                 state: String,
                 blockNum: Number,
+                subBlockNum: Number,
                 nonce: Number,
                 processor: String,
                 sender: String,
@@ -204,7 +205,7 @@ module.exports = () => {
                 subBlockNum: Number,
                 rawKey: String,
                 contractName: String,
-                functionName: String,
+                variableName: String,
                 key: String,
                 value: String
             });
