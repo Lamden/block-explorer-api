@@ -22,6 +22,23 @@ const parseJSON = (obj, key) => {
 }
 
 module.exports = {
+    find: async (ctx) => {
+        let limit = 25;
+        if (typeof ctx.params !== undefined) limit = ctx.params.num || 25
+        let results = await strapi.query('transactions').model
+            .find({}, { "id": 0, "_id": 0, "__v": 0})
+            .sort('-blockNum')
+            .limit(parseInt(limit))
+
+        return results.map(result => {
+            result = removeID(sanitizeEntity(result, { model: strapi.models.transactions }))
+            result = parseJSON(result, 'transaction')
+            result = parseJSON(result, 'state')
+            result = parseJSON(result, 'kwargs')
+            return result
+        });
+    },
+
 
     findOne: async ctx => {
         let results = await strapi.query('transactions').model.find({ hash: ctx.params.hash }, { "id": 0, "_id": 0, "__v": 0})

@@ -10,6 +10,14 @@
     },
     {
       "method": "GET",
+      "path": "/blocks/:num",
+      "handler": "blocks.find",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
       "path": "/blocks/count",
       "handler": "blocks.count",
       "config": {
@@ -18,7 +26,7 @@
     },
     {
       "method": "GET",
-      "path": "/blocks/:blockNum",
+      "path": "/blocks/number/:num",
       "handler": "blocks.findOne",
       "config": {
         "policies": []
