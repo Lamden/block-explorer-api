@@ -27,7 +27,15 @@
     {
       "method": "GET",
       "path": "/blocks/number/:num",
-      "handler": "blocks.findOne",
+      "handler": "blocks.findOneNumber",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/blocks/hash/:hash",
+      "handler": "blocks.findOneHash",
       "config": {
         "policies": []
       }

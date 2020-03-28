@@ -36,8 +36,17 @@ module.exports = {
         });
     },
 
-    findOne: async ctx => {
+    findOneNumber: async ctx => {
         let results = await strapi.query('blocks').model.find({ blockNum: ctx.params.num }, { "id": 0, "_id": 0, "__v": 0})
+
+        return results.map(result => {
+            result = removeID(sanitizeEntity(result, { model: strapi.models.blocks }))
+            result = parseJSON(result, 'transactions')
+            return result
+        });
+    },
+    findOneHash: async ctx => {
+        let results = await strapi.query('blocks').model.find({ hash: ctx.params.hash }, { "id": 0, "_id": 0, "__v": 0})
 
         return results.map(result => {
             result = removeID(sanitizeEntity(result, { model: strapi.models.blocks }))

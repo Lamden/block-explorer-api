@@ -13,6 +13,15 @@
       "path": "/transactions/:num",
       "handler": "transactions.find",
       "config": {
+       
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/transactions/history/:address",
+      "handler": "transactions.findHistory",
+      "config": {
         "policies": []
       }
     },
