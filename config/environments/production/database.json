@@ -7,8 +7,8 @@
         "host": "${process.env.DATABASE_HOST || '127.0.0.1'}",
         "port": "${process.env.DATABASE_PORT || 27017}",
         "database": "${process.env.DATABASE_NAME || 'block-explorer'}",
-        "username": "${'dbadmin'}",
-        "password": "${process.env.DBADMIN || ''}"
+        "username": "${process.env.DBUSER || ''}",
+        "password": "${process.env.DBPWD || ''}"
       },
       "options": {}
     }
