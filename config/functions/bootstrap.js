@@ -10,6 +10,9 @@
  * See more details here: https://strapi.io/documentation/3.0.0-beta.x/concepts/configurations.html#bootstrap
  */
 
+const DBUSER = process.env.DBUSER
+const DBPWD = process.env.DBPWD
+
 
 
 const databaseLoader = (http, db, models) => {
@@ -153,7 +156,7 @@ const databaseLoader = (http, db, models) => {
 module.exports = () => {
     const http = require('http');
     const mongoose = require('mongoose');
-    mongoose.connect('mongodb://myUserAdmin:dbadmin@127.0.0.1:27017/block-explorer?authSource=admin', {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {
+    mongoose.connect(`mongodb://${DBUSER}:${DBPWD}@127.0.0.1:27017/block-explorer?authSource=admin`, {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {
 
         if(error) console.log(error)
         else{
