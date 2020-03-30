@@ -22,11 +22,31 @@ const parseJSON = (obj, key) => {
 
 module.exports = {
     find: async (ctx) => {
-        let limit = 25
-        if (typeof ctx.params !== undefined) limit = ctx.params.num || 25
+        let query = {}
+        let limit = parseInt(ctx.query.limit) || 100
+        let start = parseInt(ctx.query.start) || 0
+        let action = ctx.query.action || ""
+        let sortStr = ctx.query.sort || "-blockNum"
+        if (action === "prev") {
+            query = {
+                $and: [
+                    {blockNum: {$gte: start - limit < 0 ? 0 : start - limit}},
+                    {blockNum: {$lte: start}}
+                ]
+            }
+        }
+        if (action === "next") {
+            query = {
+                $and: [
+                    {blockNum: {$gte: start}},
+                    {blockNum: {$lte: start + limit}}
+                ]
+            }
+        }
+
         let results = await strapi.query('blocks').model
-            .find({}, { "id": 0, "_id": 0, "__v": 0})
-            .sort('-blockNum')
+            .find(query, { "id": 0, "_id": 0, "__v": 0})
+            .sort(sortStr)
             .limit(parseInt(limit))
 
         return results.map(result => {
