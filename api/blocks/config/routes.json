@@ -10,7 +10,7 @@
     },
     {
       "method": "GET",
-      "path": "/blocks/:num",
+      "path": "/blocks/one/:num",
       "handler": "blocks.find",
       "config": {
         "policies": []
