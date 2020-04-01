@@ -22,23 +22,26 @@ const parseJSON = (obj, key) => {
 }
 
 module.exports = {
-    find: async (ctx) => {
-        let limit = 25;
-        if (typeof ctx.params !== undefined) limit = ctx.params.num || 25
-        let results = await strapi.query('transactions').model
-            .find({}, { "id": 0, "_id": 0, "__v": 0})
-            .sort('-blockNum')
-            .limit(parseInt(limit))
+    find: async ctx => {
+        const count = await strapi.query('transactions').count()
+        let limit = parseInt(ctx.query.limit) || 100
 
-        return results.map(result => {
+        const defaulOffset = count - limit < 0 ? 0 : count - limit;
+        let offset = typeof ctx.query.offset === 'undefined' ?  defaulOffset : parseInt(ctx.query.offset);
+
+        const results = await strapi.query('transactions').model.find({}, { "id": 0, "_id": 0, "__v": 0})
+            .skip(offset)
+            .limit(limit)
+        
+        const data = results.map(result => {
             result = removeID(sanitizeEntity(result, { model: strapi.models.transactions }))
             result = parseJSON(result, 'transaction')
             result = parseJSON(result, 'state')
             result = parseJSON(result, 'kwargs')
             return result
-        });
+        })
+        return { data, count };
     },
-
 
     findOne: async ctx => {
         let results = await strapi.query('transactions').model.find({ hash: ctx.params.hash }, { "id": 0, "_id": 0, "__v": 0})

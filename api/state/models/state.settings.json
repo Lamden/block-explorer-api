@@ -33,6 +33,17 @@
     },
     "subBlockNum": {
       "type": "integer"
+    },
+    "keys": {
+      "type": "json"
+    },
+    "keyIsAddress": {
+      "type": "boolean",
+      "default": false
+    },
+    "keyContainsAddress": {
+      "type": "boolean",
+      "default": false
     }
   }
 }

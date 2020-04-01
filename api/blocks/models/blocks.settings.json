@@ -33,6 +33,9 @@
     },
     "numOfSubBlocks": {
       "type": "integer"
+    },
+    "rawBlock": {
+      "type": "json"
     }
   }
 }

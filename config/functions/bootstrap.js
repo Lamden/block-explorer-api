@@ -10,11 +10,16 @@
  * See more details here: https://strapi.io/documentation/3.0.0-beta.x/concepts/configurations.html#bootstrap
  */
 
-const DBUSER = process.env.DBUSER
-const DBPWD = process.env.DBPWD
+const DBUSER = process.env.DBUSER || 'myUserAdmin'
+const DBPWD = process.env.DBPWD || 'dbadmin'
 
+const validators = require('types-validate-assert')
+const { validateTypes } = validators;
 
-
+const isLamdenKey = ( key ) => {
+    if (validateTypes.isStringHex(key) && key.length === 64) return true;
+    return false;
+};
 
 
 const databaseLoader = (http, db, models) => {
@@ -35,7 +40,12 @@ const databaseLoader = (http, db, models) => {
         
             // The whole response has been received. Print out the result.
             resp.on('end', () => {
-                callback(JSON.parse(data))
+                try{
+                    callback(JSON.parse(data))
+                } catch (e){
+                    doneProcessingBlock();
+                }
+                
             });
         }).on("error", (err) => {
             console.log("Error: " + err.message);
@@ -53,6 +63,7 @@ const databaseLoader = (http, db, models) => {
         if (typeof blockInfo.error === 'undefined' && typeof blockInfo.blockNum !== 'undefined'){
             console.log('processing block ' + blockInfo.blockNum)
             let block = new models.Blocks({
+                rawBlock: JSON.stringify(blockInfo),
                 blockNum:  blockInfo.blockNum, 
                 hash: blockInfo.hash,
                 previous:   blockInfo.previous,
@@ -103,7 +114,7 @@ const databaseLoader = (http, db, models) => {
                         
                         tx.state.forEach(s => {
                             transaction.numOfStateChanges = transaction.numOfStateChanges + 1
-                            new models.State({
+                            let state = new models.State({
                                 hash:  tx.hash,
                                 blockNum: blockInfo.blockNum,
                                 subBlockNum: sb.subBlockNum,
@@ -112,7 +123,18 @@ const databaseLoader = (http, db, models) => {
                                 variableName: s.key.split(":")[0].split(".")[1],
                                 key: s.key.split(/:(.+)/)[1],
                                 value: s.value,
-                            }).save();
+                            })
+                            state.keyIsAddress = isLamdenKey(state.key)
+                            state.keyContainsAddress = false
+                            let stateKeys = []
+                            if (state.key){
+                                state.key.split(":").forEach(k => {
+                                    stateKeys.push(k)
+                                    if (isLamdenKey(k)) state.keyContainsAddress = true
+                                })
+                            }
+                            state.keys = JSON.stringify(stateKeys)
+                            state.save();
                         })
                         transaction.save();
                     })
@@ -158,6 +180,7 @@ const databaseLoader = (http, db, models) => {
 module.exports = () => {
     const http = require('http');
     const mongoose = require('mongoose');
+
     mongoose.connect(`mongodb://${DBUSER}:${DBPWD}@127.0.0.1:27017/block-explorer?authSource=admin`, {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {
 
         if(error) console.log(error)
@@ -190,7 +213,8 @@ module.exports = () => {
                 previous:   String,
                 numOfSubBlocks: Number,
                 numOfTransactions: Number,
-                transactions: String
+                transactions: String,
+                rawBlock: String
             });
 
             var subblocks = new mongoose.Schema({
@@ -212,6 +236,9 @@ module.exports = () => {
                 contractName: String,
                 variableName: String,
                 key: String,
+                keyIsAddress: Boolean,
+                keyContainsAddress: Boolean,
+                keys: String,
                 value: String
             });
 

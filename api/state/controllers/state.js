@@ -7,13 +7,6 @@
 
 const { sanitizeEntity } = require('strapi-utils');
 const http = require('http');
-const validators = require('types-validate-assert')
-const { validateTypes } = validators;
-
-const isLamdenKey = ( key ) => {
-    if (validateTypes.isStringHex(key) && key.length === 64) return true;
-    return false;
-};
 
 const removeID = (obj) => {
     try{
@@ -46,6 +39,27 @@ const send = async (url) => {
 }
 
 module.exports = {
+    find: async ctx => {
+        const count = await strapi.query('transactions').count()
+        let limit = parseInt(ctx.query.limit) || 100
+
+        const defaulOffset = count - limit < 0 ? 0 : count - limit;
+        let offset = typeof ctx.query.offset === 'undefined' ?  defaulOffset : parseInt(ctx.query.offset);
+
+        const results = await strapi.query('transactions').model.find({}, { "id": 0, "_id": 0, "__v": 0})
+            .skip(offset)
+            .limit(limit)
+        
+        const data = results.map(result => {
+            result = removeID(sanitizeEntity(result, { model: strapi.models.transactions }))
+            result = parseJSON(result, 'transaction')
+            result = parseJSON(result, 'state')
+            result = parseJSON(result, 'kwargs')
+            return result
+        })
+        return { data, count };
+    },
+
     getContractName: async (ctx) => {
         let results = await strapi.query('state').model.find({
              contractName: ctx.params.contractName 
@@ -84,18 +98,34 @@ module.exports = {
         }
         
     },
-    getTopWallets: async () => {
-        var match = { $match : { contractName : "currency", variableName: 'balances'} }
-        var sort = {$sort: {"key": 1, "blockNum": -1, "value": 1}}
-        var group1 = { $group: { _id: "$key", "blockNum": { $first: "$blockNum" }, "value": { $first: "$value" } } }
-        var project = { $project: {key: "$_id", value:1}}
+    getTopWallets: async (ctx) => {
+        var match = { $match : { contractName : "currency", variableName : "balances", keyIsAddress : { $eq : true }}}
+        var sort1 = { $sort: { key: 1, blockNum: -1 }}
+        var group = { $group: { _id: "$key", "value": {$first: "$value"}}}
+        var sort2 = { $sort: { value: -1 }}
+        var project = { $project: {key: "$_id", value: 1, "_id": 0}}
+        let pipeline = [match, sort1, group, sort2, project]
+        let count = { $count : "count"}
+        let facet = { $facet: {data: pipeline, "count": [...pipeline, count]}}
+        let collation = { locale : "en_US", numericOrdering : true }
 
-        let results = await strapi.query('state').model
-       .aggregate([match, sort, group1, project])
-       return results
+        //let countRecs = await strapi.query('state').model.aggregate(pipeline)
+        //let count = countRecs.length
+
+        
+        let limit = parseInt(ctx.query.limit) || 100
+        let offset = typeof ctx.query.offset === 'undefined' ?  0 : parseInt(ctx.query.offset);
+
+        let data = await strapi.query('state').model
+            .aggregate([facet])
+            .collation(collation)
+            .skip(offset)
+            .limit(limit)
+
+       return data[0];
     },
     getTotalAddresses: async () => {
-        let results = await strapi.query('state').model.distinct("key")
-        return results.filter(result => isLamdenKey(result)).length
+        let results = await strapi.query('state').model.find({keyIsAddress: true}).distinct("key")
+        return {count: results.length}
     }
 };

@@ -21,40 +21,25 @@ const parseJSON = (obj, key) => {
 }
 
 module.exports = {
-    find: async (ctx) => {
-        let query = {}
+    find: async ctx => {
+        const count = await strapi.query('blocks').count()
         let limit = parseInt(ctx.query.limit) || 100
-        let start = parseInt(ctx.query.start) || 0
-        let action = ctx.query.action || ""
-        let sortStr = ctx.query.sort || "-blockNum"
-        if (action === "prev") {
-            query = {
-                $and: [
-                    {blockNum: {$gte: start - limit < 0 ? 0 : start - limit}},
-                    {blockNum: {$lte: start}}
-                ]
-            }
-        }
-        if (action === "next") {
-            query = {
-                $and: [
-                    {blockNum: {$gte: start}},
-                    {blockNum: {$lte: start + limit}}
-                ]
-            }
-        }
 
-        let results = await strapi.query('blocks').model
-            .find(query, { "id": 0, "_id": 0, "__v": 0})
-            .sort(sortStr)
-            .limit(parseInt(limit))
+        const defaulOffset = count - limit < 0 ? 0 : count - limit;
+        let offset = typeof ctx.query.offset === 'undefined' ?  defaulOffset : parseInt(ctx.query.offset);
 
-        return results.map(result => {
+        const results = await strapi.query('blocks').model.find({}, { "id": 0, "_id": 0, "__v": 0})
+            .skip(offset)
+            .limit(limit)
+        
+        const data = results.map(result => {
             result = removeID(sanitizeEntity(result, { model: strapi.models.blocks }))
             result = parseJSON(result, 'transactions')
             return result
-        });
+        })
+        return { data, count };
     },
+    
 
     findOneNumber: async ctx => {
         let results = await strapi.query('blocks').model.find({ blockNum: ctx.params.num }, { "id": 0, "_id": 0, "__v": 0})
