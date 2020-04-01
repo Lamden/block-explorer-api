@@ -59,7 +59,6 @@ const databaseLoader = (http, db, models) => {
     }
 
     const storeBlock = (blockInfo) => {
-        //console.log(blockInfo);
         if (typeof blockInfo.error === 'undefined' && typeof blockInfo.blockNum !== 'undefined'){
             console.log('processing block ' + blockInfo.blockNum)
             let block = new models.Blocks({

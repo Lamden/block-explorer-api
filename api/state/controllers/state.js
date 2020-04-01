@@ -27,8 +27,6 @@ const send = async (url) => {
         
             // The whole response has been received. Print out the result.
             resp.on('end', () => {
-                console.log('back from masternode')
-                console.log(data)
                 resolve(JSON.parse(data))
             });
         }).on("error", (err) => {
@@ -39,27 +37,6 @@ const send = async (url) => {
 }
 
 module.exports = {
-    find: async ctx => {
-        const count = await strapi.query('transactions').count()
-        let limit = parseInt(ctx.query.limit) || 100
-
-        const defaulOffset = count - limit < 0 ? 0 : count - limit;
-        let offset = typeof ctx.query.offset === 'undefined' ?  defaulOffset : parseInt(ctx.query.offset);
-
-        const results = await strapi.query('transactions').model.find({}, { "id": 0, "_id": 0, "__v": 0})
-            .skip(offset)
-            .limit(limit)
-        
-        const data = results.map(result => {
-            result = removeID(sanitizeEntity(result, { model: strapi.models.transactions }))
-            result = parseJSON(result, 'transaction')
-            result = parseJSON(result, 'state')
-            result = parseJSON(result, 'kwargs')
-            return result
-        })
-        return { data, count };
-    },
-
     getContractName: async (ctx) => {
         let results = await strapi.query('state').model.find({
              contractName: ctx.params.contractName 
@@ -76,7 +53,6 @@ module.exports = {
         return results.map(result => removeID(sanitizeEntity(result, { model: strapi.models.state })));
     },
     getKey: async (ctx) => {
-        console.log(ctx.params)
         let results = await strapi.query('state').model.find({ 
             contractName: ctx.params.contractName,
             variableName:  ctx.params.variableName,
