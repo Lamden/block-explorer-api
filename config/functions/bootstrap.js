@@ -192,6 +192,7 @@ const databaseLoader = (http, db, models) => {
         if (typeof blockInfo.error !== 'undefined'){
             if (blockInfo.error === 'Block not found.'){
                 await wipeDB()
+                nextBlockNum = 0;
                 alreadyCheckedCount = 0;
             }
         }
