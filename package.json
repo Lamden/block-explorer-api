@@ -1,7 +1,7 @@
 {
   "name": "block-explorer",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Strapi application",
   "scripts": {
     "develop": "strapi develop",
@@ -11,6 +11,7 @@
   },
   "devDependencies": {},
   "dependencies": {
+    "@coinpaprika/api-nodejs-client": "^1.2.0",
     "strapi": "3.0.0-beta.19.3",
     "strapi-admin": "3.0.0-beta.19.3",
     "strapi-connector-mongoose": "3.0.0-beta.19.3",

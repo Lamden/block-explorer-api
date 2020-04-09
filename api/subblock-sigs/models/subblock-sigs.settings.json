@@ -1,0 +1,26 @@
+{
+  "kind": "collectionType",
+  "connection": "default",
+  "collectionName": "subblockSigs",
+  "info": {
+    "name": "subblockSigs"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true
+  },
+  "attributes": {
+    "blockNum": {
+      "type": "integer"
+    },
+    "subBlockNum": {
+      "type": "integer"
+    },
+    "signature": {
+      "type": "string"
+    },
+    "signer": {
+      "type": "string"
+    }
+  }
+}

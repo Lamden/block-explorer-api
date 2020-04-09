@@ -72,7 +72,7 @@ module.exports = {
         }catch (e){
             return 0;
         }
-        
+
     },
     getTopWallets: async (ctx) => {
         var match = { $match : { contractName : "currency", variableName : "balances", keyIsAddress : { $eq : true }}}

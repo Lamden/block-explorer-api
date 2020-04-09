@@ -1,0 +1,52 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/subblock-sigs",
+      "handler": "subblock-sigs.find",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/subblock-sigs/count",
+      "handler": "subblock-sigs.count",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/subblock-sigs/:id",
+      "handler": "subblock-sigs.findOne",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/subblock-sigs",
+      "handler": "subblock-sigs.create",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/subblock-sigs/:id",
+      "handler": "subblock-sigs.update",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/subblock-sigs/:id",
+      "handler": "subblock-sigs.delete",
+      "config": {
+        "policies": []
+      }
+    }
+  ]
+}
