@@ -55,7 +55,6 @@ module.exports = {
         result = parseJSON(result, 'state')
         result = parseJSON(result, 'kwargs')
         return result
-
     }, 
 
     findHistory: async (ctx) => {
