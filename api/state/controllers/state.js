@@ -75,29 +75,24 @@ module.exports = {
 
     },
     getTopWallets: async (ctx) => {
+        let reclimit = parseInt(ctx.query.limit) || 20
+        let offset = typeof ctx.query.offset === 'undefined' ?  0 : parseInt(ctx.query.offset);
+
         var match = { $match : { contractName : "currency", variableName : "balances", keyIsAddress : { $eq : true }}}
         var sort1 = { $sort: { key: 1, blockNum: -1 }}
         var group = { $group: { _id: "$key", "value": {$first: "$value"}}}
         var sort2 = { $sort: { value: -1 }}
+        var skip = { $skip: offset }
+        var limit = { $limit: reclimit}
         var project = { $project: {key: "$_id", value: 1, "_id": 0}}
-        let pipeline = [match, sort1, group, sort2, project]
+        let pipeline = [match, sort1, group, sort2, skip, limit,  project]
         let count = { $count : "count"}
         let facet = { $facet: {data: pipeline, "count": [...pipeline, count]}}
         let collation = { locale : "en_US", numericOrdering : true }
 
-        //let countRecs = await strapi.query('state').model.aggregate(pipeline)
-        //let count = countRecs.length
-
-        
-        let limit = parseInt(ctx.query.limit) || 100
-        let offset = typeof ctx.query.offset === 'undefined' ?  0 : parseInt(ctx.query.offset);
-
         let data = await strapi.query('state').model
             .aggregate([facet])
-            .collation(collation)
-            .skip(offset)
-            .limit(limit)
-
+            .collation(collation)            
        return data[0];
     },
     getTotalAddresses: async () => {
