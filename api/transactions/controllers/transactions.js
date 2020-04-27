@@ -58,8 +58,10 @@ module.exports = {
     }, 
 
     findHistory: async (ctx) => {
-
         let hashes = []
+        let limit = parseInt(ctx.query.limit) || 10
+        let offset = parseInt(ctx.query.offset) || 0
+
         let stateResults = await strapi.query('state').model
             .find({key: {$regex : `.*${ctx.params.address}.*`}}, { "id": 0, "_id": 0, "__v": 0})
             stateResults.forEach(doc => {
@@ -69,6 +71,8 @@ module.exports = {
         let txResults = await strapi.query('transactions').model
             .find( { $or: [{sender: ctx.params.address}, {hash: {$in: [... new Set(hashes)]}}] }, { "id": 0, "_id": 0, "__v": 0} )
             .sort('-blockNum')
+            .limit(limit)
+            .skip(offset)
 
         txResults = txResults.map(result => {
             result = removeID(sanitizeEntity(result, { model: strapi.models.transactions }))
@@ -77,8 +81,6 @@ module.exports = {
             result = parseJSON(result, 'kwargs')
             return result
         });
-
-        return txResults;
-
+        return {data: txResults, count: stateResults.length};
     },
 };
