@@ -16,6 +16,11 @@ const DBPWD = process.env.DBPWD || 'dbadmin'
 const validators = require('types-validate-assert')
 const { validateTypes } = validators;
 
+const masternode = {
+    ip: "167.172.126.5",
+    port: "18080"
+}
+
 const isLamdenKey = ( key ) => {
     if (validateTypes.isStringHex(key) && key.length === 64) return true;
     return false;
@@ -23,13 +28,16 @@ const isLamdenKey = ( key ) => {
 
 
 const databaseLoader = (http, db, models) => {
-    let processingBlocks = false;
-    let nextBlockNum = 0;
+    let currBlockNum = 1;
     let checkNextIn = 0;
     let maxCheckCount = 10;
     let alreadyCheckedCount = 0;
-    const url_getBlockNum = 'http://167.172.126.5:18080/blocks?num='
-    let query_maxBlock = db.models.Blocks.find().sort({blockNum : -1}).limit(1)
+    const url_getBlockNum = `http://${masternode.ip}:${masternode.port}/blocks?num=`
+    const url_getLastestBlock = `http://${masternode.ip}:${masternode.port}/latest_block`
+    let lastestBlockNum = 0;
+    let currBatchMax = 0;
+    let batchAmount = 25;
+    let wipeOnStartup = true
 
     const wipeDB = async () => {
         console.log('-----WIPING DATABASE-----')
@@ -59,9 +67,8 @@ const databaseLoader = (http, db, models) => {
                 try{
                     callback(JSON.parse(data))
                 } catch (err){
-                    callback({error: err.message})
-                }
-                
+                    console.log("Error: " + err.message);
+                }               
             });
         }).on("error", (err) => {
             callback({error: err.message})
@@ -69,169 +76,164 @@ const databaseLoader = (http, db, models) => {
         });
     }
 
-    const doneProcessingBlock = () => {
-        checkNextIn = 0;
-        processingBlocks = false;
-    }
-
-    const storeBlock = (blockInfo) => {
-        if (blockInfo.error){
-            doneProcessingBlock();
-        }else{
-            if (typeof blockInfo.error === 'undefined' && typeof blockInfo.blockNum !== 'undefined'){
-                console.log('processing block ' + blockInfo.blockNum)
-                let block = new models.Blocks({
-                    rawBlock: JSON.stringify(blockInfo),
-                    blockNum:  blockInfo.blockNum, 
-                    hash: blockInfo.hash,
-                    previous:   blockInfo.previous,
-                    numOfSubBlocks: 0,
-                    numOfTransactions: 0,
-                    transactions: JSON.stringify([])
-                })
-                let blockTxList = []
-                if (typeof blockInfo.subBlocks !== 'undefined'){
-                    blockInfo.subBlocks.forEach(sb => {
-                        block.numOfSubBlocks = block.numOfSubBlocks + 1
-                        let subblockTxList = []
-                        let subblock = new models.Subblocks({
-                            blockNum: blockInfo.blockNum,
-                            inputHash: sb.inputHash,
-                            merkleLeaves:  JSON.stringify(sb.merkleLeaves), 
-                            prevBlockHash:   sb.prevBlockHash,
-                            signatures: JSON.stringify(sb.signatures),
-                            subBlockNum: sb.subBlockNum,
-                            numOfTransactions: 0,
-                            transactions: JSON.stringify([])
-                        })
-
-                        sb.signatures.forEach(sig => {
-                            new models.SubblockSigs({
-                                blockNum: blockInfo.blockNum,
-                                subBlockNum: sb.subBlockNum,
-                                signature: sig.signature,
-                                signer: sig.signer
-                            }).save()
-                        })
-    
-                        sb.transactions.forEach(tx => {
-                            sb.numOfTransactions = sb.numOfTransactions + 1;
-                            block.numOfTransactions = block.numOfTransactions + 1;
-                            blockTxList.push(tx.hash)
-                            subblockTxList.push(tx.hash)
-                            let transaction = new models.Transactions({
-                                hash:  tx.hash, 
-                                stampsUsed: tx.stampsUsed,
-                                status:   tx.status,
-                                transaction:  JSON.stringify(tx.transaction) || undefined, 
-                                state: JSON.stringify(tx.state) || undefined,
-                                blockNum: blockInfo.blockNum,
-                                subBlockNum: sb.subBlockNum,
-                                contractName: tx.transaction.payload.contractName,
-                                functionName: tx.transaction.payload.functionName,
-                                nonce: tx.transaction.payload.nonce,
-                                processor: tx.transaction.payload.processor,
-                                sender: tx.transaction.payload.sender,
-                                stampsSupplied: tx.transaction.payload.stampsSupplied,
-                                kwargs: tx.transaction.payload.kwargs,
-                                timestamp: new Date(tx.transaction.metadata.timestamp * 1000),
-                                signature: tx.transaction.metadata.signature,
-                                numOfStateChanges: 0
-                            })
-                            
-                            tx.state.forEach(s => {
-                                transaction.numOfStateChanges = transaction.numOfStateChanges + 1
-                                let state = new models.State({
-                                    hash:  tx.hash,
-                                    blockNum: blockInfo.blockNum,
-                                    subBlockNum: sb.subBlockNum,
-                                    rawKey: s.key,
-                                    contractName: s.key.split(":")[0].split(".")[0],
-                                    variableName: s.key.split(":")[0].split(".")[1],
-                                    key: s.key.split(/:(.+)/)[1],
-                                    value: s.value,
-                                })
-                                state.keyIsAddress = isLamdenKey(state.key)
-                                state.keyContainsAddress = false
-                                let stateKeys = []
-                                if (state.key){
-                                    state.key.split(":").forEach(k => {
-                                        stateKeys.push(k)
-                                        if (isLamdenKey(k)) state.keyContainsAddress = true
-                                    })
-                                }
-                                state.keys = JSON.stringify(stateKeys)
-                                state.save();
-                            })
-                            transaction.save();
-                        })
-                        subblock.transactions = JSON.stringify(subblockTxList);
-                        subblock.save();
+    const storeBlock = async (blockInfo) => {
+        if (typeof blockInfo.error === 'undefined' && typeof blockInfo.number !== 'undefined'){
+            console.log('processing block ' + blockInfo.number)
+            let block = new models.Blocks({
+                rawBlock: JSON.stringify(blockInfo),
+                blockNum:  blockInfo.number, 
+                hash: blockInfo.hash,
+                previous:   blockInfo.previous,
+                numOfSubBlocks: 0,
+                numOfTransactions: 0,
+                transactions: JSON.stringify([])
+            })
+            let blockTxList = []
+            if (typeof blockInfo.subBlocks !== 'undefined'){
+                blockInfo.subBlocks.forEach(sb => {
+                    block.numOfSubBlocks = block.numOfSubBlocks + 1
+                    let subblockTxList = []
+                    let subblock = new models.Subblocks({
+                        blockNum: blockInfo.number,
+                        inputHash: sb.inputHash,
+                        merkleLeaves:  JSON.stringify(sb.merkleLeaves), 
+                        prevBlockHash:   sb.prevBlockHash,
+                        signatures: JSON.stringify(sb.signatures),
+                        subBlockNum: sb.subBlockNum,
+                        numOfTransactions: 0,
+                        transactions: JSON.stringify([])
                     })
-                }
-                block.transactions = JSON.stringify(blockTxList)
-                block.save(function (err) {
-                    if (err) console.log(err);
-                    console.log('saved ' + blockInfo.blockNum)
-                    doneProcessingBlock();
-                });
-                alreadyCheckedCount = 0;
-            }else{
-                checkNextIn = 5000;
-                doneProcessingBlock() 
+
+                    sb.signatures.forEach(sig => {
+                        new models.SubblockSigs({
+                            blockNum: blockInfo.number,
+                            subBlockNum: sb.subBlockNum,
+                            signature: sig.signature,
+                            signer: sig.signer
+                        }).save()
+                    })
+
+                    sb.transactions.forEach(tx => {
+                        sb.numOfTransactions = sb.numOfTransactions + 1;
+                        block.numOfTransactions = block.numOfTransactions + 1;
+                        blockTxList.push(tx.hash)
+                        subblockTxList.push(tx.hash)
+                        let transaction = new models.Transactions({
+                            hash:  tx.hash, 
+                            stampsUsed: tx.stampsUsed,
+                            status:   tx.status,
+                            transaction:  JSON.stringify(tx.transaction) || undefined, 
+                            state: JSON.stringify(tx.state) || undefined,
+                            blockNum: blockInfo.number,
+                            subBlockNum: sb.subBlockNum,
+                            contractName: tx.transaction.payload.contractName,
+                            functionName: tx.transaction.payload.functionName,
+                            nonce: tx.transaction.payload.nonce,
+                            processor: tx.transaction.payload.processor,
+                            sender: tx.transaction.payload.sender,
+                            stampsSupplied: tx.transaction.payload.stampsSupplied,
+                            kwargs: tx.transaction.payload.kwargs,
+                            timestamp: new Date(tx.transaction.metadata.timestamp * 1000),
+                            signature: tx.transaction.metadata.signature,
+                            numOfStateChanges: 0
+                        })
+                        
+                        tx.state.forEach(s => {
+                            transaction.numOfStateChanges = transaction.numOfStateChanges + 1
+                            let state = new models.State({
+                                hash:  tx.hash,
+                                blockNum: blockInfo.number,
+                                subBlockNum: sb.subBlockNum,
+                                rawKey: s.key,
+                                contractName: s.key.split(":")[0].split(".")[0],
+                                variableName: s.key.split(":")[0].split(".")[1],
+                                key: s.key.split(/:(.+)/)[1],
+                                value: s.value,
+                            })
+                            state.keyIsAddress = isLamdenKey(state.key)
+                            state.keyContainsAddress = false
+                            let stateKeys = []
+                            if (state.key){
+                                state.key.split(":").forEach(k => {
+                                    stateKeys.push(k)
+                                    if (isLamdenKey(k)) state.keyContainsAddress = true
+                                })
+                            }
+                            state.keys = JSON.stringify(stateKeys)
+                            state.save();
+                        })
+                        transaction.save();
+                    })
+                    subblock.transactions = JSON.stringify(subblockTxList);
+                    subblock.save();
+                })
             }
+            block.transactions = JSON.stringify(blockTxList)
+            block.save(function (err) {
+                if (err) console.log(err);
+                console.log('saved ' + blockInfo.number)
+            });
+        }
+
+        if (blockInfo.number === currBatchMax) {
+            currBlockNum = currBatchMax
+            timerId = setTimeout(checkForBlocks, 0);
         }
     }
 
-    const getNextBlock = (nextBlockNum) => {
-        console.log('checking block ' + nextBlockNum)
-        send(url_getBlockNum + nextBlockNum, storeBlock)
+    const getBlock_MN = (blockNum) => {
+        send(url_getBlockNum + blockNum, storeBlock)
     }
 
-    const checkIfBlockExists = async (blockInfo) => {
-        if (typeof blockInfo.error !== 'undefined'){
-            if (blockInfo.error === 'Block not found.'){
-                await wipeDB()
-                nextBlockNum = 0;
-                alreadyCheckedCount = 0;
+    const getLatestBlock_MN = () => {
+        return new Promise((resolve, reject) => {
+            const returnRes = async (res) => {
+                if (res.error) reject(res)
+                else resolve(res.number)
+            }
+            send(url_getLastestBlock, returnRes)
+        })
+    }
+
+    const checkForBlocks = async () => {
+        if (wipeOnStartup){
+            wipeDB();
+            wipeOnStartup = false;
+            timerId = setTimeout(checkForBlocks, 2000);
+            return
+        }
+        console.log('.....................checking..................')
+        lastestBlockNum = await getLatestBlock_MN()
+
+        console.log('lastestBlockNum: ' + lastestBlockNum)
+        console.log('currBlockNum: ' + currBlockNum)
+        if (lastestBlockNum === currBlockNum){
+            console.log(alreadyCheckedCount)
+            if (alreadyCheckedCount < maxCheckCount) alreadyCheckedCount = alreadyCheckedCount + 1;
+            console.log(alreadyCheckedCount)
+            checkNextIn = 500 * alreadyCheckedCount;
+            console.log(checkNextIn)
+            timerId = setTimeout(checkForBlocks, checkNextIn);
+        }
+
+        if (lastestBlockNum > currBlockNum){
+            currBatchMax = currBlockNum + batchAmount;
+            if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
+            if (currBatchMax > 25) currBatchMax + 25
+            for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
+                console.log('getting block: ' + i)
+                getBlock_MN(i)
             }
         }
-        processingBlocks = false;
-    }
 
-    const getCurrentBlock = (blockNum) => {
-        send(url_getBlockNum + blockNum, checkIfBlockExists)
+        if (lastestBlockNum < currBlockNum) {
+            wipeDB();
+            timerId = setTimeout(checkForBlocks, 10000);
+        }
     }
   
     // Timer to check pending transacations
-    let timerId = setTimeout(function checkForBlocks() {
-        if(!processingBlocks){
-            processingBlocks = true;
-            query_maxBlock.then(res => {
-                if (res.length > 0) nextBlockNum = res[0].blockNum + 1   
-                getNextBlock(nextBlockNum)
-            })
-        }else{
-            console.log('already checked ' + alreadyCheckedCount)
-            checkNextIn = 1000 * alreadyCheckedCount;
-            if (alreadyCheckedCount < maxCheckCount ){
-                alreadyCheckedCount = alreadyCheckedCount + 1
-            } else {
-                processingBlocks = true;
-                query_maxBlock.then(res => {
-                    if (res.length > 0) {
-                        console.log(`checking if max blockNum ${res[0].blockNum} still exists `)
-                        getCurrentBlock(res[0].blockNum);
-                    }else{
-                        console.log(`!Something wrong with query return, aborting`)
-                        console.log(res)
-                        processingBlocks = false;
-                    }
-                })
-            }
-        }
-        timerId = setTimeout(checkForBlocks, checkNextIn);
-    }, 0);
+    let timerId = setTimeout(checkForBlocks, 0);
 }
 
 module.exports = () => {
