@@ -126,7 +126,7 @@ const databaseLoader = (http, db, models) => {
                             transaction:  JSON.stringify(tx.transaction) || undefined, 
                             state: JSON.stringify(tx.state) || undefined,
                             blockNum: blockInfo.number,
-                            subBlockNum: sb.subBlockNum,
+                            subBlockNum: sb.subblock,
                             contractName: tx.transaction.payload.contract,
                             functionName: tx.transaction.payload.function,
                             nonce: tx.transaction.payload.nonce,
