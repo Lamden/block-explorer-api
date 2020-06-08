@@ -89,17 +89,17 @@ const databaseLoader = (http, db, models) => {
                 transactions: JSON.stringify([])
             })
             let blockTxList = []
-            if (typeof blockInfo.subBlocks !== 'undefined'){
-                blockInfo.subBlocks.forEach(sb => {
+            if (typeof blockInfo.subblocks !== 'undefined'){
+                blockInfo.subblocks.forEach(sb => {
                     block.numOfSubBlocks = block.numOfSubBlocks + 1
                     let subblockTxList = []
                     let subblock = new models.Subblocks({
                         blockNum: blockInfo.number,
-                        inputHash: sb.inputHash,
-                        merkleLeaves:  JSON.stringify(sb.merkleLeaves), 
-                        prevBlockHash:   sb.prevBlockHash,
+                        inputHash: sb.input_hash,
+                        merkleLeaves:  JSON.stringify(sb.merkle_leaves), 
+                        prevBlockHash:   sb.previous,
                         signatures: JSON.stringify(sb.signatures),
-                        subBlockNum: sb.subBlockNum,
+                        subBlockNum: sb.subblock,
                         numOfTransactions: 0,
                         transactions: JSON.stringify([])
                     })
@@ -107,7 +107,7 @@ const databaseLoader = (http, db, models) => {
                     sb.signatures.forEach(sig => {
                         new models.SubblockSigs({
                             blockNum: blockInfo.number,
-                            subBlockNum: sb.subBlockNum,
+                            subBlockNum: sb.subblock,
                             signature: sig.signature,
                             signer: sig.signer
                         }).save()
@@ -119,20 +119,21 @@ const databaseLoader = (http, db, models) => {
                         blockTxList.push(tx.hash)
                         subblockTxList.push(tx.hash)
                         let transaction = new models.Transactions({
-                            hash:  tx.hash, 
-                            stampsUsed: tx.stampsUsed,
+                            hash:  tx.hash,
+                            result: tx.result, 
+                            stampsUsed: tx.stamps_used,
                             status:   tx.status,
                             transaction:  JSON.stringify(tx.transaction) || undefined, 
                             state: JSON.stringify(tx.state) || undefined,
                             blockNum: blockInfo.number,
                             subBlockNum: sb.subBlockNum,
-                            contractName: tx.transaction.payload.contractName,
-                            functionName: tx.transaction.payload.functionName,
+                            contractName: tx.transaction.payload.contract,
+                            functionName: tx.transaction.payload.function,
                             nonce: tx.transaction.payload.nonce,
                             processor: tx.transaction.payload.processor,
                             sender: tx.transaction.payload.sender,
-                            stampsSupplied: tx.transaction.payload.stampsSupplied,
-                            kwargs: tx.transaction.payload.kwargs,
+                            stampsSupplied: tx.transaction.payload.stamps_supplied,
+                            kwargs: JSON.stringify(tx.transaction.payload.kwargs),
                             timestamp: new Date(tx.transaction.metadata.timestamp * 1000),
                             signature: tx.transaction.metadata.signature,
                             numOfStateChanges: 0
@@ -143,7 +144,7 @@ const databaseLoader = (http, db, models) => {
                             let state = new models.State({
                                 hash:  tx.hash,
                                 blockNum: blockInfo.number,
-                                subBlockNum: sb.subBlockNum,
+                                subBlockNum: sb.subblock,
                                 rawKey: s.key,
                                 contractName: s.key.split(":")[0].split(".")[0],
                                 variableName: s.key.split(":")[0].split(".")[1],
@@ -173,11 +174,11 @@ const databaseLoader = (http, db, models) => {
                 if (err) console.log(err);
                 console.log('saved ' + blockInfo.number)
             });
-        }
 
-        if (blockInfo.number === currBatchMax) {
-            currBlockNum = currBatchMax
-            timerId = setTimeout(checkForBlocks, 0);
+            if (blockInfo.number === currBatchMax) {
+                currBlockNum = currBatchMax
+                timerId = setTimeout(checkForBlocks, 0);
+            }
         }
     }
 
@@ -188,8 +189,7 @@ const databaseLoader = (http, db, models) => {
     const getLatestBlock_MN = () => {
         return new Promise((resolve, reject) => {
             const returnRes = async (res) => {
-                if (res.error) reject(res)
-                else resolve(res.number)
+                resolve(res)
             }
             send(url_getLastestBlock, returnRes)
         })
@@ -202,32 +202,33 @@ const databaseLoader = (http, db, models) => {
             timerId = setTimeout(checkForBlocks, 2000);
             return
         }
-        console.log('.....................checking..................')
-        lastestBlockNum = await getLatestBlock_MN()
-
-        console.log('lastestBlockNum: ' + lastestBlockNum)
-        console.log('currBlockNum: ' + currBlockNum)
-        if (lastestBlockNum === currBlockNum){
-            console.log(alreadyCheckedCount)
-            if (alreadyCheckedCount < maxCheckCount) alreadyCheckedCount = alreadyCheckedCount + 1;
-            console.log(alreadyCheckedCount)
-            checkNextIn = 500 * alreadyCheckedCount;
-            console.log(checkNextIn)
-            timerId = setTimeout(checkForBlocks, checkNextIn);
-        }
-
-        if (lastestBlockNum > currBlockNum){
-            currBatchMax = currBlockNum + batchAmount;
-            if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
-            if (currBatchMax > 25) currBatchMax + 25
-            for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
-                console.log('getting block: ' + i)
-                getBlock_MN(i)
+        let response = await getLatestBlock_MN()
+        if (!response.error){
+            lastestBlockNum = response.number
+            console.log('lastestBlockNum: ' + lastestBlockNum)
+            console.log('currBlockNum: ' + currBlockNum)
+            if (lastestBlockNum === currBlockNum){
+                if (alreadyCheckedCount < maxCheckCount) alreadyCheckedCount = alreadyCheckedCount + 1;
+                checkNextIn = 500 * alreadyCheckedCount;
+                timerId = setTimeout(checkForBlocks, checkNextIn);
             }
-        }
 
-        if (lastestBlockNum < currBlockNum) {
-            wipeDB();
+            if (lastestBlockNum > currBlockNum){
+                currBatchMax = currBlockNum + batchAmount;
+                if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
+                if (currBatchMax > 25) currBatchMax + 25
+                for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
+                    console.log('getting block: ' + i)
+                    getBlock_MN(i)
+                }
+            }
+
+            if (lastestBlockNum < currBlockNum) {
+                wipeDB();
+                timerId = setTimeout(checkForBlocks, 10000);
+            }
+        }else{
+            console.log('Could not contact masternode, trying again in 10 seconds')
             timerId = setTimeout(checkForBlocks, 10000);
         }
     }
@@ -248,6 +249,7 @@ module.exports = () => {
 
             var transactions = new mongoose.Schema({
                 hash:  String,
+                result: String,
                 contractName: String,
                 functionName: String,
                 stampsUsed: Number,
