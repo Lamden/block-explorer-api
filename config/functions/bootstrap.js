@@ -68,11 +68,12 @@ const databaseLoader = (http, db, models) => {
                     callback(JSON.parse(data))
                 } catch (err){
                     console.log("Error: " + err.message);
+                    callback({error: err.message})
                 }               
             });
         }).on("error", (err) => {
-            callback({error: err.message})
             console.log("Error: " + err.message);
+            callback({error: err.message})
         });
     }
 
