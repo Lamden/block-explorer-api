@@ -40,32 +40,50 @@ module.exports = {
     getContractName: async (ctx) => {
         let reclimit = parseInt(ctx.query.limit) || 100
         let sort = parseInt(ctx.query.sort) || -1
-        console.log(reclimit)
-        let results = await strapi.query('state').model.
-        find({ 
-             contractName: ctx.params.contractName
-        }, { "id": 0, "_id": 0, "__v": 0})
+
+        let stateResults = await strapi.query('state').model
+        .find({ contractName: ctx.params.contractName}, { "id": 0, "_id": 0, "__v": 0})
         .sort({blockNum: sort})
         .limit(reclimit)
-        console.log(results)
-        return results.map(result => removeID(sanitizeEntity(result, { model: strapi.models.state })));
+
+        return await Promise.all(stateResults.map(async (result) => {
+            console.log('appending tx')
+            let txInfo = await strapi.query('transactions').model
+            .findOne({ hash: result.hash }, { "id": 0, "_id": 0, "__v": 0})
+            txInfo = removeID(sanitizeEntity(txInfo, { model: strapi.models.transactions }))
+            txInfo.state = JSON.parse(txInfo.state)
+            result.transaction = txInfo
+            return {
+                ...removeID(sanitizeEntity(result, { model: strapi.models.state })),
+                transaction: JSON.parse(txInfo.transaction)}
+        }))        
     },
     getVariableName: async (ctx) => {
         let reclimit = parseInt(ctx.query.limit) || 100
         let sort = parseInt(ctx.query.sort) || -1
-        let results = await strapi.query('state').model.find({ 
+        let stateResults = await strapi.query('state').model.find({ 
             contractName: ctx.params.contractName,
             variableName:  ctx.params.variableName
         }, { "id": 0, "_id": 0, "__v": 0})
         .sort({blockNum: sort})
         .limit(reclimit)
 
-        return results.map(result => removeID(sanitizeEntity(result, { model: strapi.models.state })));
+        return await Promise.all(stateResults.map(async (result) => {
+            console.log('appending tx')
+            let txInfo = await strapi.query('transactions').model
+            .findOne({ hash: result.hash }, { "id": 0, "_id": 0, "__v": 0})
+            txInfo = removeID(sanitizeEntity(txInfo, { model: strapi.models.transactions }))
+            txInfo.state = JSON.parse(txInfo.state)
+            result.transaction = txInfo
+            return {
+                ...removeID(sanitizeEntity(result, { model: strapi.models.state })),
+                transaction: JSON.parse(txInfo.transaction)}
+        }))  
     },
     getKey: async (ctx) => {
         let reclimit = parseInt(ctx.query.limit) || 100
         let sort = parseInt(ctx.query.sort) || -1
-        let results = await strapi.query('state').model.find({ 
+        let stateResults = await strapi.query('state').model.find({ 
             contractName: ctx.params.contractName,
             variableName:  ctx.params.variableName,
             key: ctx.params.key
@@ -73,7 +91,17 @@ module.exports = {
         .sort({blockNum: sort})
         .limit(reclimit)
         
-        return results.map(result => removeID(sanitizeEntity(result, { model: strapi.models.state })));
+        return await Promise.all(stateResults.map(async (result) => {
+            console.log('appending tx')
+            let txInfo = await strapi.query('transactions').model
+            .findOne({ hash: result.hash }, { "id": 0, "_id": 0, "__v": 0})
+            txInfo = removeID(sanitizeEntity(txInfo, { model: strapi.models.transactions }))
+            txInfo.state = JSON.parse(txInfo.state)
+            result.transaction = txInfo
+            return {
+                ...removeID(sanitizeEntity(result, { model: strapi.models.state })),
+                transaction: JSON.parse(txInfo.transaction)}
+        }))  
     },
     getCurrencyBalance: async (ctx) => {
         let res = await send(`http://167.172.126.5:18080/contracts/currency/balances?key=${ctx.params.key}`)
