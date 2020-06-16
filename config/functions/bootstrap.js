@@ -150,8 +150,9 @@ const databaseLoader = (http, db, models) => {
                                 contractName: s.key.split(":")[0].split(".")[0],
                                 variableName: s.key.split(":")[0].split(".")[1],
                                 key: s.key.split(/:(.+)/)[1],
-                                value: s.value,
+                                value: typeof s.value === 'string' ? s.value : JSON.stringify(s.value)
                             })
+
                             state.keyIsAddress = isLamdenKey(state.key)
                             state.keyContainsAddress = false
                             let stateKeys = []

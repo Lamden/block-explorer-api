@@ -38,26 +38,40 @@ const send = async (url) => {
 
 module.exports = {
     getContractName: async (ctx) => {
-        let results = await strapi.query('state').model.find({
-             contractName: ctx.params.contractName 
+        let reclimit = parseInt(ctx.query.limit) || 100
+        let sort = parseInt(ctx.query.sort) || -1
+        console.log(reclimit)
+        let results = await strapi.query('state').model.
+        find({ 
+             contractName: ctx.params.contractName
         }, { "id": 0, "_id": 0, "__v": 0})
-
+        .sort({blockNum: sort})
+        .limit(reclimit)
+        console.log(results)
         return results.map(result => removeID(sanitizeEntity(result, { model: strapi.models.state })));
     },
     getVariableName: async (ctx) => {
+        let reclimit = parseInt(ctx.query.limit) || 100
+        let sort = parseInt(ctx.query.sort) || -1
         let results = await strapi.query('state').model.find({ 
             contractName: ctx.params.contractName,
             variableName:  ctx.params.variableName
         }, { "id": 0, "_id": 0, "__v": 0})
+        .sort({blockNum: sort})
+        .limit(reclimit)
 
         return results.map(result => removeID(sanitizeEntity(result, { model: strapi.models.state })));
     },
     getKey: async (ctx) => {
+        let reclimit = parseInt(ctx.query.limit) || 100
+        let sort = parseInt(ctx.query.sort) || -1
         let results = await strapi.query('state').model.find({ 
             contractName: ctx.params.contractName,
             variableName:  ctx.params.variableName,
             key: ctx.params.key
         }, { "id": 0, "_id": 0, "__v": 0})
+        .sort({blockNum: sort})
+        .limit(reclimit)
         
         return results.map(result => removeID(sanitizeEntity(result, { model: strapi.models.state })));
     },
