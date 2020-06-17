@@ -139,32 +139,34 @@ const databaseLoader = (http, db, models) => {
                             signature: tx.transaction.metadata.signature,
                             numOfStateChanges: 0
                         })
-                        
-                        tx.state.forEach(s => {
-                            transaction.numOfStateChanges = transaction.numOfStateChanges + 1
-                            let state = new models.State({
-                                hash:  tx.hash,
-                                blockNum: blockInfo.number,
-                                subBlockNum: sb.subblock,
-                                rawKey: s.key,
-                                contractName: s.key.split(":")[0].split(".")[0],
-                                variableName: s.key.split(":")[0].split(".")[1],
-                                key: s.key.split(/:(.+)/)[1],
-                                value: typeof s.value === 'string' ? s.value : JSON.stringify(s.value)
-                            })
 
-                            state.keyIsAddress = isLamdenKey(state.key)
-                            state.keyContainsAddress = false
-                            let stateKeys = []
-                            if (state.key){
-                                state.key.split(":").forEach(k => {
-                                    stateKeys.push(k)
-                                    if (isLamdenKey(k)) state.keyContainsAddress = true
+                        if (Array.isArray(tx.state)){
+                            tx.state.forEach(s => {
+                                transaction.numOfStateChanges = transaction.numOfStateChanges + 1
+                                let state = new models.State({
+                                    hash:  tx.hash,
+                                    blockNum: blockInfo.number,
+                                    subBlockNum: sb.subblock,
+                                    rawKey: s.key,
+                                    contractName: s.key.split(":")[0].split(".")[0],
+                                    variableName: s.key.split(":")[0].split(".")[1],
+                                    key: s.key.split(/:(.+)/)[1],
+                                    value: typeof s.value === 'string' ? s.value : JSON.stringify(s.value)
                                 })
-                            }
-                            state.keys = JSON.stringify(stateKeys)
-                            state.save();
-                        })
+
+                                state.keyIsAddress = isLamdenKey(state.key)
+                                state.keyContainsAddress = false
+                                let stateKeys = []
+                                if (state.key){
+                                    state.key.split(":").forEach(k => {
+                                        stateKeys.push(k)
+                                        if (isLamdenKey(k)) state.keyContainsAddress = true
+                                    })
+                                }
+                                state.keys = JSON.stringify(stateKeys)
+                                state.save();
+                            })
+                        }
                         transaction.save();
                     })
                     subblock.transactions = JSON.stringify(subblockTxList);
