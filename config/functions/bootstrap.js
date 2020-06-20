@@ -17,6 +17,7 @@ const validators = require('types-validate-assert')
 const { validateTypes } = validators;
 
 const masternode = {
+    //ip: "138.68.247.223",
     ip: "167.172.126.5",
     port: "18080"
 }
