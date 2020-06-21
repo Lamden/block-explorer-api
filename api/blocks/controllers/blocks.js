@@ -23,12 +23,14 @@ const parseJSON = (obj, key) => {
 module.exports = {
     find: async ctx => {
         const count = await strapi.query('blocks').count()
+
         let limit = parseInt(ctx.query.limit) || 100
+        let sort = parseInt(ctx.query.sort) || -1
 
         const defaulOffset = count - limit < 0 ? 0 : count - limit;
         let offset = typeof ctx.query.offset === 'undefined' ?  defaulOffset : parseInt(ctx.query.offset);
-
         const results = await strapi.query('blocks').model.find({}, { "id": 0, "_id": 0, "__v": 0})
+            .sort({blockNum: sort})
             .skip(offset)
             .limit(limit)
         
