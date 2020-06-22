@@ -29,7 +29,7 @@ module.exports = {
         const offset = parseInt(ctx.query.offset) || 0
 
         const results = await strapi.query('transactions').model.find({}, { "id": 0, "_id": 0, "__v": 0})
-            .sort({blockNum: sort})
+            .sort({blockNum: sort, nonce: -1})
             .skip(offset)
             .limit(limit)
         
@@ -70,7 +70,7 @@ module.exports = {
 
         let txResults = await strapi.query('transactions').model
             .find( { $or: [{sender: ctx.params.address}, {hash: {$in: [... new Set(hashes)]}}] }, { "id": 0, "_id": 0, "__v": 0} )
-            .sort('-blockNum')
+            .sort({blockNum: -1, nonce: -1})
             .limit(limit)
             .skip(offset)
 

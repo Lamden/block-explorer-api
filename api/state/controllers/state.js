@@ -46,7 +46,7 @@ module.exports = {
 
         let stateResults = await strapi.query('state').model
         .find({ contractName: ctx.params.contractName}, { "id": 0, "_id": 0, "__v": 0})
-        .sort({blockNum: sort})
+        .sort({blockNum: sort, txNonce: -1})
         .limit(reclimit)
 
         return await Promise.all(stateResults.map(async (result) => {
@@ -67,7 +67,7 @@ module.exports = {
             contractName: ctx.params.contractName,
             variableName:  ctx.params.variableName
         }, { "id": 0, "_id": 0, "__v": 0})
-        .sort({blockNum: sort})
+        .sort({blockNum: sort, txNonce: -1})
         .limit(reclimit)
 
         return await Promise.all(stateResults.map(async (result) => {
@@ -89,7 +89,7 @@ module.exports = {
             variableName:  ctx.params.variableName,
             key: ctx.params.key
         }, { "id": 0, "_id": 0, "__v": 0})
-        .sort({blockNum: sort})
+        .sort({blockNum: sort, txNonce: -1})
         .limit(reclimit)
         
         return await Promise.all(stateResults.map(async (result) => {

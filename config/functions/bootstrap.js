@@ -38,7 +38,7 @@ const databaseLoader = (http, db, models) => {
     let lastestBlockNum = 0;
     let currBatchMax = 0;
     let batchAmount = 25;
-    let wipeOnStartup = true;
+    let wipeOnStartup = false;
     let timerId;
 
     const wipeDB = async () => {
