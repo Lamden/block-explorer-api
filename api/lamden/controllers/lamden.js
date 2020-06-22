@@ -5,6 +5,9 @@
  * to customize this controller
  */
 
+ //const masternodeIP = '138.68.247.223'
+const masternodeIP = '167.172.126.5'
+
 const http = require('http');
 const CoinpaprikaAPI = require('@coinpaprika/api-nodejs-client');
 const client = new CoinpaprikaAPI();
@@ -36,8 +39,7 @@ module.exports = {
         return results
     },
     getStamps: async () => {
-        let results = await send('http://167.172.126.5:18080/contracts/stamp_cost/S?key=value');
-        console.log(results)
+        let results = await send(`${masternodeIP}/contracts/stamp_cost/S?key=value`);
         return results
     }
 }

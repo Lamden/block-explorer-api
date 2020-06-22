@@ -5,8 +5,8 @@
  * to customize this controller
  */
 
-const masternodeIP = '138.68.247.223'
-//const masternodeIP = '167.172.126.5'
+//const masternodeIP = '138.68.247.223'
+const masternodeIP = '167.172.126.5'
 
 const { sanitizeEntity } = require('strapi-utils');
 const http = require('http');
@@ -50,7 +50,6 @@ module.exports = {
         .limit(reclimit)
 
         return await Promise.all(stateResults.map(async (result) => {
-            console.log('appending tx')
             let txInfo = await strapi.query('transactions').model
             .findOne({ hash: result.hash }, { "id": 0, "_id": 0, "__v": 0})
             txInfo = removeID(sanitizeEntity(txInfo, { model: strapi.models.transactions }))
@@ -72,7 +71,6 @@ module.exports = {
         .limit(reclimit)
 
         return await Promise.all(stateResults.map(async (result) => {
-            console.log('appending tx')
             let txInfo = await strapi.query('transactions').model
             .findOne({ hash: result.hash }, { "id": 0, "_id": 0, "__v": 0})
             txInfo = removeID(sanitizeEntity(txInfo, { model: strapi.models.transactions }))
@@ -95,7 +93,6 @@ module.exports = {
         .limit(reclimit)
         
         return await Promise.all(stateResults.map(async (result) => {
-            console.log('appending tx')
             let txInfo = await strapi.query('transactions').model
             .findOne({ hash: result.hash }, { "id": 0, "_id": 0, "__v": 0})
             txInfo = removeID(sanitizeEntity(txInfo, { model: strapi.models.transactions }))
@@ -120,16 +117,15 @@ module.exports = {
 
     },
     getTopWallets: async (ctx) => {
-        console.log(ctx.query)
         let reclimit = parseInt(ctx.query.limit) || 20
-        let offset = typeof ctx.query.offset === 'undefined' ?  0 : parseInt(ctx.query.offset);
+        let offset = parseInt(ctx.query.offset) || 0;
         let reverse = -1
         if (typeof ctx.query.reverse !== 'undefined') {
             if (ctx.query.reverse === 'true') reverse = 1
         }
         
         var match = { $match : { contractName : "currency", variableName : "balances", keyIsAddress : { $eq : true }}}
-        var sort1 = { $sort: { key: 1, blockNum: -1 }}
+        var sort1 = { $sort: { key: 1, blockNum: -1, txNonce: -1 }}
         var group = { $group: { _id: "$key", "value": {$first: "$value"}}}
         var sort2 = { $sort: { value: reverse }}
         var skip = { $skip: offset }
@@ -141,10 +137,14 @@ module.exports = {
         let facet = { $facet: {data: dataPipeline, "count": countPipeline}}
         let collation = { locale : "en_US", numericOrdering : true }
 
-        let data = await strapi.query('state').model
+        let results = await strapi.query('state').model
             .aggregate([facet])
-            .collation(collation)            
-       return data[0];
+            .collation(collation)
+
+        return {
+            data: results[0].data,
+            count: results[0].count[0].count
+        }
     },
     getTotalAddresses: async () => {
         let results = await strapi.query('state').model.find({keyIsAddress: true}).distinct("key")

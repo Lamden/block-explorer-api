@@ -23,20 +23,21 @@ const parseJSON = (obj, key) => {
 module.exports = {
     find: async ctx => {
         const count = await strapi.query('blocks').count()
-
+        const raw = parseInt(ctx.query.raw) || 0
+        const offset = parseInt(ctx.query.offset) || 0
         let limit = parseInt(ctx.query.limit) || 100
         let sort = parseInt(ctx.query.sort) || -1
 
-        const defaulOffset = count - limit < 0 ? 0 : count - limit;
-        let offset = typeof ctx.query.offset === 'undefined' ?  defaulOffset : parseInt(ctx.query.offset);
         const results = await strapi.query('blocks').model.find({}, { "id": 0, "_id": 0, "__v": 0})
             .sort({blockNum: sort})
             .skip(offset)
             .limit(limit)
         
         const data = results.map(result => {
+            
             result = removeID(sanitizeEntity(result, { model: strapi.models.blocks }))
             result = parseJSON(result, 'transactions')
+            if (!raw) delete result.rawBlock
             return result
         })
         return { data, count };

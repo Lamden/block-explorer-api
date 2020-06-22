@@ -38,7 +38,8 @@ const databaseLoader = (http, db, models) => {
     let lastestBlockNum = 0;
     let currBatchMax = 0;
     let batchAmount = 25;
-    let wipeOnStartup = true
+    let wipeOnStartup = false;
+    let timerId;
 
     const wipeDB = async () => {
         console.log('-----WIPING DATABASE-----')
@@ -52,6 +53,9 @@ const databaseLoader = (http, db, models) => {
         console.log('State DB wiped')
         await db.models.Transactions.deleteMany({}).then(res => console.log(res))
         console.log('Transactions DB wiped')
+        currBlockNum = 0;
+        console.log('Set currBlockNum = 0')
+        timerId = setTimeout(checkForBlocks, 3000); 
     }
 
     const send = (url, callback) => {
@@ -80,7 +84,6 @@ const databaseLoader = (http, db, models) => {
 
     const storeBlock = async (blockInfo) => {
         if (typeof blockInfo.error === 'undefined' && typeof blockInfo.number !== 'undefined'){
-            console.log('processing block ' + blockInfo.number)
             let block = new models.Blocks({
                 rawBlock: JSON.stringify(blockInfo),
                 blockNum:  blockInfo.number, 
@@ -90,6 +93,9 @@ const databaseLoader = (http, db, models) => {
                 numOfTransactions: 0,
                 transactions: JSON.stringify([])
             })
+
+            console.log('processing block ' + blockInfo.number + ' - ', block.hash)
+
             let blockTxList = []
             if (typeof blockInfo.subblocks !== 'undefined'){
                 blockInfo.subblocks.forEach(sb => {
@@ -120,6 +126,7 @@ const databaseLoader = (http, db, models) => {
                         block.numOfTransactions = block.numOfTransactions + 1;
                         blockTxList.push(tx.hash)
                         subblockTxList.push(tx.hash)
+
                         let transaction = new models.Transactions({
                             hash:  tx.hash,
                             result: tx.result, 
@@ -146,6 +153,7 @@ const databaseLoader = (http, db, models) => {
                                 transaction.numOfStateChanges = transaction.numOfStateChanges + 1
                                 let state = new models.State({
                                     hash:  tx.hash,
+                                    txNonce: tx.transaction.payload.nonce,
                                     blockNum: blockInfo.number,
                                     subBlockNum: sb.subblock,
                                     rawKey: s.key,
@@ -201,45 +209,49 @@ const databaseLoader = (http, db, models) => {
     }
 
     const checkForBlocks = async () => {
-        if (wipeOnStartup){
-            wipeDB();
-            wipeOnStartup = false;
-            timerId = setTimeout(checkForBlocks, 2000);
-            return
-        }
         let response = await getLatestBlock_MN()
+
         if (!response.error){
             lastestBlockNum = response.number
-            console.log('lastestBlockNum: ' + lastestBlockNum)
-            console.log('currBlockNum: ' + currBlockNum)
-            if (lastestBlockNum === currBlockNum){
-                if (alreadyCheckedCount < maxCheckCount) alreadyCheckedCount = alreadyCheckedCount + 1;
-                checkNextIn = 500 * alreadyCheckedCount;
-                timerId = setTimeout(checkForBlocks, checkNextIn);
-            }
-
-            if (lastestBlockNum > currBlockNum){
-                currBatchMax = currBlockNum + batchAmount;
-                if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
-                if (currBatchMax > 25) currBatchMax + 25
-                for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
-                    console.log('getting block: ' + i)
-                    getBlock_MN(i)
+            if (lastestBlockNum < currBlockNum || wipeOnStartup){
+                await wipeDB();
+                wipeOnStartup = false;
+            }else{
+                console.log('lastestBlockNum: ' + lastestBlockNum)
+                console.log('currBlockNum: ' + currBlockNum)
+                if (lastestBlockNum === currBlockNum){
+                    if (alreadyCheckedCount < maxCheckCount) alreadyCheckedCount = alreadyCheckedCount + 1;
+                    checkNextIn = 500 * alreadyCheckedCount;
+                    timerId = setTimeout(checkForBlocks, checkNextIn);
                 }
-            }
-
-            if (lastestBlockNum < currBlockNum) {
-                wipeDB();
-                timerId = setTimeout(checkForBlocks, 10000);
+    
+                if (lastestBlockNum > currBlockNum){
+                    currBatchMax = currBlockNum + batchAmount;
+                    if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
+                    if (currBatchMax > 25) currBatchMax + 25
+                    for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
+                        console.log('getting block: ' + i)
+                        getBlock_MN(i)
+                    }
+                }
+    
+                if (lastestBlockNum < currBlockNum) {
+                    wipeDB();
+                    timerId = setTimeout(checkForBlocks, 10000);
+                }
             }
         }else{
             console.log('Could not contact masternode, trying again in 10 seconds')
             timerId = setTimeout(checkForBlocks, 10000);
         }
     }
-  
-    // Timer to check pending transacations
-    let timerId = setTimeout(checkForBlocks, 0);
+
+    models.Blocks.findOne().sort({blockNum: -1})
+    .then(async (res) => {
+        if (res) currBlockNum = res.blockNum ? res.blockNum : 0;
+        else currBlockNum = 0
+        timerId = setTimeout(checkForBlocks, 0);
+    })
 }
 
 module.exports = () => {
@@ -303,6 +315,7 @@ module.exports = () => {
 
             var state = new mongoose.Schema({
                 hash: String,
+                txNonce: Number,
                 blockNum:  Number,
                 subBlockNum: Number,
                 rawKey: String,
