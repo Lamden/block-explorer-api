@@ -5,8 +5,8 @@
  * to customize this controller
  */
 
- //const masternodeIP = '138.68.247.223'
-const masternodeIP = '167.172.126.5'
+ //const masternodeIP = 'http://138.68.247.223:18080'
+const masternodeIP = 'http://167.172.126.5:18080'
 
 const http = require('http');
 const CoinpaprikaAPI = require('@coinpaprika/api-nodejs-client');
