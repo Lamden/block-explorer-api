@@ -7,7 +7,9 @@
     "develop": "strapi develop",
     "start": "strapi start",
     "build": "strapi build",
-    "strapi": "strapi"
+    "strapi": "strapi",
+    "prod-wipe": "npm run build && WIPE=yes NODE_ENV=production npm start",
+    "prod-nowipe": "npm run build && WIPE=no NODE_ENV=production npm start"
   },
   "devDependencies": {},
   "dependencies": {

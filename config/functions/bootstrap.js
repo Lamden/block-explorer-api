@@ -12,6 +12,7 @@
 
 const DBUSER = process.env.DBUSER || 'myUserAdmin'
 const DBPWD = process.env.DBPWD || 'dbadmin'
+var wipeOnStartup = process.env.WIPE === 'no' ? false : true;
 
 const validators = require('types-validate-assert')
 const { validateTypes } = validators;
@@ -38,7 +39,6 @@ const databaseLoader = (http, db, models) => {
     let lastestBlockNum = 0;
     let currBatchMax = 0;
     let batchAmount = 25;
-    let wipeOnStartup = false;
     let timerId;
 
     const wipeDB = async () => {
@@ -250,6 +250,7 @@ const databaseLoader = (http, db, models) => {
     .then(async (res) => {
         if (res) currBlockNum = res.blockNum ? res.blockNum : 0;
         else currBlockNum = 0
+        console.log('wipeOnStartup', wipeOnStartup)
         timerId = setTimeout(checkForBlocks, 0);
     })
 }
