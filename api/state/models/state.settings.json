@@ -23,7 +23,7 @@
       "type": "string"
     },
     "value": {
-      "type": "string"
+      "type": "text"
     },
     "blockNum": {
       "type": "integer"

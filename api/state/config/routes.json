@@ -58,6 +58,14 @@
     },
     {
       "method": "GET",
+      "path": "/states/history/:contractName/:variableName/value/:value",
+      "handler": "state.hasValue",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
       "path": "/states/balances/:key",
       "handler": "state.getCurrencyBalance",
       "config": {
@@ -100,6 +108,38 @@
       "method": "DELETE",
       "path": "/states/:id",
       "handler": "state.delete",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/things/owned/:owner",
+      "handler": "things.owned",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/things/recent/",
+      "handler": "things.recent",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/things/liked/",
+      "handler": "things.liked",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/things/forsale/",
+      "handler": "things.forSale",
       "config": {
         "policies": []
       }

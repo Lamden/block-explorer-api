@@ -103,6 +103,19 @@ module.exports = {
                 transaction: JSON.parse(txInfo.transaction)}
         }))  
     },
+    hasValue: async (ctx) => {
+        let reclimit = parseInt(ctx.query.limit) || 100
+        let sort = parseInt(ctx.query.sort) || -1
+        let stateResults = await strapi.query('state').model.find({ 
+            contractName: ctx.params.contractName,
+            variableName:  ctx.params.variableName,
+            value: ctx.params.value
+        }, { "id": 0, "_id": 0, "__v": 0})
+        .sort({blockNum: sort, txNonce: -1})
+        .limit(reclimit)
+        
+        return await Promise.all(stateResults.map(async (result) => removeID(sanitizeEntity(result, { model: strapi.models.state }))))  
+    },
     getCurrencyBalance: async (ctx) => {
         let res = await send(`http://${masternodeIP}:18080/contracts/currency/balances?key=${ctx.params.key}`)
         return res
@@ -114,7 +127,6 @@ module.exports = {
         }catch (e){
             return 0;
         }
-
     },
     getTopWallets: async (ctx) => {
         let reclimit = parseInt(ctx.query.limit) || 20
@@ -143,7 +155,7 @@ module.exports = {
 
         return {
             data: results[0].data,
-            count: results[0].count[0].count
+            count: results[0].count[0] ? results[0].count[0].count : 0
         }
     },
     getTotalAddresses: async () => {
