@@ -26,10 +26,9 @@ const addMeta = async (result, values, contractName, variableName, replace) => {
         }catch (e){
             return undefined
         }
-
     }
 
-    return await Promise.all(values.map(async (value) => {
+    let returnResult =  await Promise.all(values.map(async (value) => {
         if (value === 'meta_items'){
             let metaItems = JSON.parse(await queryMeta(value))
             await Promise.all(metaItems.map(async (item) => {
@@ -37,11 +36,12 @@ const addMeta = async (result, values, contractName, variableName, replace) => {
                 result[item] = JSON.parse(metaValue)
             }))
         }else{
-            if (value === 'price:amount') result['price'] = await queryMeta(value)
-            else result[value] = await queryMeta(value)
+            let metaValue = await queryMeta(value)
+            if (typeof metaValue === 'undefined') metaValue = null
+            result[value] = await queryMeta(value)
         }
-
     }))
+    return returnResult
 }
 
 
@@ -169,7 +169,7 @@ module.exports = {
         var sort2 = { $sort: { value: reverse }}
         var skip = { $skip: offset }
         var limit = { $limit: reclimit}
-        var project = { $project: {key: "$_id", "price": "$value", "_id": 0}}
+        var project = { $project: {key: "$_id", "price:amount": "$value", "_id": 0}}
         let count = { $count : "count"}
         let dataPipeline = [match, sort1, group, sort2, skip, limit,  project]
         let countPipeline = [match, sort1, group, sort2, project, count]
@@ -189,12 +189,64 @@ module.exports = {
                 'price:amount'
             )
             delete result.key
+            result['price:amount'] = JSON.parse(result['price:amount'])
             return result
         }))  
 
         return {
-            data: returnList.filter(res => res.price > 0),
+            data: returnList,
             count: results[0].count[0] ? results[0].count[0].count : 0
         }
+    },
+    getOne: async (ctx) => {
+        const { uid, contractName } = ctx.params
+
+        let thingResult = await strapi.query('state').model.findOne({ 
+            contractName,
+            variableName: 'S',
+            key: uid,
+        }, { "id": 0, "_id": 0, "__v": 0})
+        let values = thingResult.value.replace(/\[|\]|\"/g,'').split(',')
+        if (!values.includes("meta_items")) values.push("meta_items")
+
+        thingResult.key = thingResult.key + ":"
+
+        let sanny = removeID(sanitizeEntity(thingResult, { model: strapi.models.state }))
+        await addMeta(
+            sanny, 
+            values, 
+            contractName, 
+            'S', 
+            ''
+        )
+        delete sanny.key
+        return sanny
+    },
+    created: async (ctx) => {
+        let { contractName, variableName } = ctx.request.body
+        let { creator } = ctx.params
+
+        let stateResults = await strapi.query('state').model.find({ 
+            contractName,
+            variableName,
+            key: { $regex: /:creator$/ },
+            value: creator
+        }, { "id": 0, "_id": 0, "__v": 0})
+        .sort({blockNum: -1, txNonce: -1})
+        
+        return await Promise.all(stateResults.map(async (result) => {
+            let sanny = removeID(sanitizeEntity(result, { model: strapi.models.state }))
+            await addMeta(
+                sanny, 
+                ['name', 'likes', 'owner', 'thing', 'description', 'price:amount', 'price:hold', 'meta_items'], 
+                contractName, 
+                variableName, 
+                'creator'
+            )
+            sanny.creator = sanny.value
+            delete sanny.key
+            delete sanny.value
+            return sanny          
+        }))  
     },
 }

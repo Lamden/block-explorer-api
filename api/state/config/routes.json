@@ -143,6 +143,22 @@
       "config": {
         "policies": []
       }
+    },
+    {
+      "method": "GET",
+      "path": "/things/:contractName/:uid",
+      "handler": "things.getOne",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/things/created/:creator",
+      "handler": "things.created",
+      "config": {
+        "policies": []
+      }
     }
   ]
 }
