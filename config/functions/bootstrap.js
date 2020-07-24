@@ -12,30 +12,24 @@
 
 const DBUSER = process.env.DBUSER || 'myUserAdmin'
 const DBPWD = process.env.DBPWD || 'dbadmin'
+const connectionString = `mongodb://${DBUSER}:${DBPWD}@127.0.0.1:27017/block-explorer?authSource=admin`
 var wipeOnStartup = process.env.WIPE === 'no' ? false : true;
 
 const validators = require('types-validate-assert')
 const { validateTypes } = validators;
-
-const masternode = {
-    //ip: "138.68.247.223",
-    ip: "167.172.126.5",
-    port: "18080"
-}
 
 const isLamdenKey = ( key ) => {
     if (validateTypes.isStringHex(key) && key.length === 64) return true;
     return false;
 };
 
-
 const databaseLoader = (http, db, models) => {
     let currBlockNum = 1;
     let checkNextIn = 0;
     let maxCheckCount = 10;
     let alreadyCheckedCount = 0;
-    const url_getBlockNum = `http://${masternode.ip}:${masternode.port}/blocks?num=`
-    const url_getLastestBlock = `http://${masternode.ip}:${masternode.port}/latest_block`
+    const url_getBlockNum = `${strapi.config.masternodes[0]}/blocks?num=`
+    const url_getLastestBlock = `${strapi.config.masternodes[0]}/latest_block`
     let lastestBlockNum = 0;
     let currBatchMax = 0;
     let batchAmount = 25;
@@ -256,10 +250,11 @@ const databaseLoader = (http, db, models) => {
 }
 
 module.exports = () => {
+    console.log(strapi.config)
     const http = require('http');
     const mongoose = require('mongoose');
 
-    mongoose.connect(`mongodb://${DBUSER}:${DBPWD}@127.0.0.1:27017/block-explorer?authSource=admin`, {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {
+    mongoose.connect(connectionString, {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {
 
         if(error) console.log(error)
         else{

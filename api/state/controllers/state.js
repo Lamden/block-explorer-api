@@ -5,9 +5,6 @@
  * to customize this controller
  */
 
-//const masternodeIP = '138.68.247.223'
-const masternodeIP = '167.172.126.5'
-
 const { sanitizeEntity } = require('strapi-utils');
 const http = require('http');
 
@@ -117,11 +114,11 @@ module.exports = {
         return await Promise.all(stateResults.map(async (result) => removeID(sanitizeEntity(result, { model: strapi.models.state }))))  
     },
     getCurrencyBalance: async (ctx) => {
-        let res = await send(`http://${masternodeIP}:18080/contracts/currency/balances?key=${ctx.params.key}`)
+        let res = await send(`${strapi.config.masternodes[0]}/contracts/currency/balances?key=${ctx.params.key}`)
         return res
     },
     getTotalContracts: async () => {
-        let res = await send(`http://${masternodeIP}:18080/contracts`)
+        let res = await send(`${strapi.config.masternodes[0]}/contracts`)
         try{
             return res.contracts.length
         }catch (e){
