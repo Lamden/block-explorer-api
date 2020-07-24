@@ -10,9 +10,12 @@
  * See more details here: https://strapi.io/documentation/3.0.0-beta.x/concepts/configurations.html#bootstrap
  */
 
+ /******* MONGO DB CONNECTION INFO **/
 const DBUSER = process.env.DBUSER || 'myUserAdmin'
 const DBPWD = process.env.DBPWD || 'dbadmin'
 const connectionString = `mongodb://${DBUSER}:${DBPWD}@127.0.0.1:27017/block-explorer?authSource=admin`
+
+
 var wipeOnStartup = process.env.WIPE === 'yes' ? true : false;
 
 const validators = require('types-validate-assert')
