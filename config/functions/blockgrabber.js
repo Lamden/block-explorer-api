@@ -193,7 +193,7 @@ const databaseLoader = (https, db, models) => {
     }
 
     const getBlock_MN = (blockNum) => {
-        send(`${strapi.config.masternode()}${route_getBlockNum}${blockNum}`, storeBlock)
+        send(`${strapi.config.lamden.masternode()}${route_getBlockNum}${blockNum}`, storeBlock)
     }
 
     const getLatestBlock_MN = () => {
@@ -202,7 +202,7 @@ const databaseLoader = (https, db, models) => {
 
                 resolve(res)
             }
-            send(`${strapi.config.masternode()}${route_getLastestBlock}`, returnRes)
+            send(`${strapi.config.lamden.masternode()}${route_getLastestBlock}`, returnRes)
         })
     }
 
@@ -256,8 +256,6 @@ const databaseLoader = (https, db, models) => {
 module.exports = () => {
     const https = require('https');
     const mongoose = require('mongoose');
-
-    strapi.config.masternode = () => {return strapi.config.masternodes[Math.floor(Math.random() * strapi.config.masternodes.length)]}
 
     mongoose.connect(connectionString, {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {
 
