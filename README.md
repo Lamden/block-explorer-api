@@ -21,6 +21,13 @@ module.exports = ({ env }) => ({
 
 ```
 
+### Generate secure token
+```bash
+node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+nano .env
+ADMIN_JWT_SECRET=token_generated_above
+```
+
 ## Run
 ```
 npm run develop
