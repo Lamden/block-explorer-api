@@ -249,4 +249,18 @@ module.exports = {
             return sanny          
         }))  
     },
+    likedOne: async (ctx) => {
+        let { contractName, variableName  } = ctx.request.body
+        let { account, uid } = ctx.params
+
+        console.log({contractName, variableName, account, uid })
+        let stateResults = await strapi.query('state').model.findOne({ 
+            contractName,
+            variableName,
+            key: `liked:${uid}:${account}`
+        }, { "id": 0, "_id": 0, "__v": 0})
+        .sort({blockNum: -1, txNonce: -1})  
+        
+        return {value: !stateResults ? false : true}
+    }
 }
