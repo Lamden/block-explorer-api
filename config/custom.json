@@ -1,3 +1,3 @@
 {
-  "masternodes": ["http://167.172.126.5:18080"]
+  "masternodes": ["https://masternode-01.lamden.io", "https://masternode-02.lamden.io"]
 }
