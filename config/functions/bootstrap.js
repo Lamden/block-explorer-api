@@ -12,6 +12,10 @@ const blockgrabber = require('./blockgrabber.js');
  */
 
 module.exports = () => {
+    //add random masternode function
+    strapi.config.lamden.masternode = () => {return strapi.config.lamden.masternodes[Math.floor(Math.random() * strapi.config.lamden.masternodes.length)]}
+
+    //Start background block grabber
     blockgrabber()
 };
 

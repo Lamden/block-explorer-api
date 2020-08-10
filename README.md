@@ -12,21 +12,13 @@ npm install
 
 ```
 
-### Edit masternode config
-```bash
-nano config/custom.json
+### Create masternodes config
+```bash 
+nano config/lamden.js
+module.exports = ({ env }) => ({
+  masternodes: ["https://masternode-01.lamden.io", "https://masternode-02.lamden.io"]
+});
 
-{
-  "masternodes": ["http://167.172.126.5:18080"]
-}
-
-```
-
-### Edit mongo connection string
-```bash
-nano config/functions/bootstrap.js
-
->> const connectionString = "YOUR CONNECTION STRING"
 ```
 
 ## Run
