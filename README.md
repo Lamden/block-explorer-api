@@ -12,7 +12,7 @@ npm install
 
 ```
 
-### Create masternodes config
+### Create lamden config with masternode info
 ```bash 
 nano config/lamden.js
 module.exports = ({ env }) => ({
