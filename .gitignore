@@ -110,4 +110,5 @@ coverage
 exports
 .cache
 build
-config/custom.json
+config/lamden.js
+.env
