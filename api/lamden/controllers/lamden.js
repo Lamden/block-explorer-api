@@ -5,13 +5,13 @@
  * to customize this controller
  */
 
-const http = require('http');
+const https = require('https');
 const CoinpaprikaAPI = require('@coinpaprika/api-nodejs-client');
 const client = new CoinpaprikaAPI();
 
 const send = async (url) => {
     return new Promise( (resolve) => {
-        http.get(url, (resp) => {
+        https.get(url, (resp) => {
             let data = '';
         
             // A chunk of data has been recieved.
@@ -36,7 +36,7 @@ module.exports = {
         return results
     },
     getStamps: async () => {
-        let results = await send(`${strapi.config.masternodes[0]}/contracts/stamp_cost/S?key=value`);
+        let results = await send(`${strapi.config.lamden.masternode()}/contracts/stamp_cost/S?key=value`);
         return results
     }
 }

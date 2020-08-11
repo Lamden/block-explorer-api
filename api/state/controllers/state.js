@@ -6,7 +6,7 @@
  */
 
 const { sanitizeEntity } = require('strapi-utils');
-const http = require('http');
+const https = require('https');
 
 const removeID = (obj) => {
     try{
@@ -17,7 +17,7 @@ const removeID = (obj) => {
 
 const send = async (url) => {
     return new Promise( (resolve) => {
-        http.get(url, (resp) => {
+        https.get(url, (resp) => {
             let data = '';
         
             // A chunk of data has been recieved.
@@ -114,11 +114,11 @@ module.exports = {
         return await Promise.all(stateResults.map(async (result) => removeID(sanitizeEntity(result, { model: strapi.models.state }))))  
     },
     getCurrencyBalance: async (ctx) => {
-        let res = await send(`${strapi.config.masternodes[0]}/contracts/currency/balances?key=${ctx.params.key}`)
+        let res = await send(`${strapi.config.lamden.masternode()}/contracts/currency/balances?key=${ctx.params.key}`)
         return res
     },
     getTotalContracts: async () => {
-        let res = await send(`${strapi.config.masternodes[0]}/contracts`)
+        let res = await send(`${strapi.config.lamden.masternode()}/contracts`)
         try{
             return res.contracts.length
         }catch (e){
