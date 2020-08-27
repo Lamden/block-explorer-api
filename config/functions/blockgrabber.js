@@ -1,5 +1,6 @@
 'use strict';
 const https = require('https');
+const http = require('http');
 const mongoose = require('mongoose');
 let db = mongoose;
 
@@ -33,7 +34,7 @@ const databaseLoader = (models) => {
     const route_getLastestBlock = '/latest_block'
     let lastestBlockNum = 0;
     let currBatchMax = 0;
-    let batchAmount = 1;
+    let batchAmount = 25;
     let timerId;
 
     const wipeDB = async () => {
@@ -54,7 +55,10 @@ const databaseLoader = (models) => {
     }
 
     const send = (url, callback) => {
-        https.get(url, (resp) => {
+        let protocal = http
+        if (url.includes('https://')) protocal = https
+
+        protocal.get(url, (resp) => {
             let data = '';
         
             // A chunk of data has been recieved.
@@ -225,8 +229,10 @@ const databaseLoader = (models) => {
                     if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
                     if (currBatchMax > batchAmount) currBatchMax + batchAmount
                     for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
-                        console.log('getting block: ' + i)
-                        getBlock_MN(i)
+                        let timedelay = (i - currBlockNum) * 250
+                        console.log('getting block: ' + i + " with delay of " + timedelay + 'ms')
+                        setTimeout(() => getBlock_MN(i), 100 + timedelay);
+                        //getBlock_MN(i)
                     }
                 }
     
