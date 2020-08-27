@@ -33,7 +33,7 @@ const databaseLoader = (models) => {
     const route_getLastestBlock = '/latest_block'
     let lastestBlockNum = 0;
     let currBatchMax = 0;
-    let batchAmount = 25;
+    let batchAmount = 1;
     let timerId;
 
     const wipeDB = async () => {
@@ -197,7 +197,6 @@ const databaseLoader = (models) => {
     const getLatestBlock_MN = () => {
         return new Promise((resolve, reject) => {
             const returnRes = async (res) => {
-
                 resolve(res)
             }
             send(`${strapi.config.lamden.masternode()}${route_getLastestBlock}`, returnRes)
@@ -224,7 +223,7 @@ const databaseLoader = (models) => {
                 if (lastestBlockNum > currBlockNum){
                     currBatchMax = currBlockNum + batchAmount;
                     if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
-                    if (currBatchMax > 25) currBatchMax + 25
+                    if (currBatchMax > batchAmount) currBatchMax + batchAmount
                     for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
                         console.log('getting block: ' + i)
                         getBlock_MN(i)
