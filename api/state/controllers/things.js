@@ -10,12 +10,14 @@ const removeID = (obj) => {
     }catch(e){}
     return obj
 }
-const addMeta = async (result, values, contractName, variableName, replace) => {
-    let raw = `${contractName}.${variableName}:`
+const addMeta = async (result, values, contractName, replace) => {
+    values.push('meta_items')
+    let raw = `${contractName}.S:`
     const queryMeta = async (getMeta) => {
         let meta =  await strapi.query('state').model.find({ 
             rawKey: `${raw}${result.key.replace(`:${replace}`, `:${getMeta}`)}`
         })
+
         .sort({blockNum: -1, txNonce: -1})
         .limit(1)
         try{
@@ -47,49 +49,65 @@ const addMeta = async (result, values, contractName, variableName, replace) => {
 
 module.exports = {
     owned: async (ctx) => {
-        let { contractName, variableName } = ctx.request.body
-        let { owner } = ctx.params
-        let stateResults = await strapi.query('state').model.find({ 
-            contractName,
-            variableName,
-            key: { $regex: /:owner$/ },
-            value: ctx.params.owner
-        }, { "id": 0, "_id": 0, "__v": 0})
-        .sort({blockNum: -1, txNonce: -1})
+        const { contractName, owner } = ctx.params
+        let reclimit = parseInt(ctx.query.limit) || 20
+        let offset = parseInt(ctx.query.offset) || 0;
+        let reverse = -1
+        if (typeof ctx.query.reverse !== 'undefined') {
+            if (ctx.query.reverse === 'true') reverse = 1
+        }
         
-        let returnList =  await Promise.all(stateResults.map(async (result) => {
-            //console.log(result)
-            if (result.keys.includes('owner')){
-                let res =  await strapi.query('state').model.find({ 
-                    rawKey: result.rawKey
-                })
-                .sort({blockNum: -1, txNonce: -1})
-                .limit(1)
-                if (res[0].value === owner){
-                    let sanny = removeID(sanitizeEntity(res[0], { model: strapi.models.state }))
-                    await addMeta(
-                        sanny, 
-                        ['name', 'thing', 'likes', 'description', 'price:amount', 'price:hold', 'meta_items'], 
-                        contractName, 
-                        variableName, 
-                        'owner'
-                    )
-                    sanny.owner = sanny.value
-                    delete sanny.value
-                    return sanny
-                }
-            }
+        var match = { $match : { contractName, variableName: "S", key: { $regex: /:owner$/ }, value: owner}}
+        var sort1 = { $sort: { key: 1, blockNum: -1, txNonce: -1 }}
+        var group = { $group: { _id: "$key", "blockNum": {$max: "$blockNum"}}}
+        var sort2 = { $sort: { value: reverse }}
+        var skip = { $skip: offset }
+        var limit = { $limit: reclimit}
+        var project = { $project: {key: "$_id", "_id": 0}}
+        let count = { $count : "count"}
+        let dataPipeline = [match, sort1, group, sort2, skip, limit,  project]
+        let countPipeline = [match, sort1, group, sort2, project, count]
+        let facet = { $facet: {data: dataPipeline, "count": countPipeline}}
+        let collation = { locale : "en_US", numericOrdering : true }
+
+        let results = await strapi.query('state').model
+            .aggregate([facet])
+            .collation(collation)
+
+        console.log(results)
+
+        let returnList =  await Promise.all(results[0].data.map(async (result) => {
+            console.log(result)
+            let uid = result.key.split(":")[0]
+            let res =  await strapi.query('state').model.findOne({ 
+                rawKey: `${contractName}.S:${uid}`
+            })
+            let sanny = removeID(sanitizeEntity(result, { model: strapi.models.state }))
+            await addMeta(
+                sanny, 
+                JSON.parse(res.value), 
+                contractName, 
+                'owner'
+            )
+
+            sanny.owner = owner
+            delete sanny.value
+            return sanny
+
         }))  
-        return returnList.filter((res) => res)
+        return {
+            data: returnList,
+            count: results[0].count[0] ? results[0].count[0].count : 0
+        }
     },
     recent: async (ctx) => {
-        const { contractName, variableName } = ctx.request.body
+        const { contractName } = ctx.params
         const limit  = parseInt(ctx.query.limit) || 25
         const offset = parseInt(ctx.query.offset) || 0
 
         let stateResults = await strapi.query('state').model.find({ 
             contractName,
-            variableName,
+            variableName: "S",
             key: { $regex: /:thing$/ },
         }, { "id": 0, "_id": 0, "__v": 0})
         .sort({blockNum: -1, txNonce: -1})
@@ -100,9 +118,8 @@ module.exports = {
             let sanny = removeID(sanitizeEntity(result, { model: strapi.models.state }))
             await addMeta(
                 sanny, 
-                ['name', 'likes', 'owner', 'description', 'price:amount', 'price:hold', 'meta_items'], 
+                ['name', 'likes', 'owner', 'description', 'price:amount', 'price:hold'], 
                 contractName, 
-                variableName, 
                 'thing'
             )
             sanny.thing = sanny.value
@@ -112,7 +129,7 @@ module.exports = {
         }))  
     },
     liked: async (ctx) => {
-        const { contractName, variableName } = ctx.request.body
+        const { contractName } = ctx.params
         let reclimit = parseInt(ctx.query.limit) || 20
         let offset = parseInt(ctx.query.offset) || 0;
         let reverse = -1
@@ -120,7 +137,7 @@ module.exports = {
             if (ctx.query.reverse === 'true') reverse = 1
         }
         
-        var match = { $match : { contractName, variableName, key: { $regex: /:likes$/ }}}
+        var match = { $match : { contractName, variableName: "S", key: { $regex: /:likes$/ }}}
         var sort1 = { $sort: { key: 1, blockNum: -1, txNonce: -1 }}
         var group = { $group: { _id: "$key", "value": {$first: "$value"}}}
         var sort2 = { $sort: { value: reverse }}
@@ -140,9 +157,8 @@ module.exports = {
         let returnList =  await Promise.all(results[0].data.map(async (result) => {
             await addMeta(
                 result, 
-                ['name', 'thing', 'owner', 'description', 'price:amount', 'price:hold', 'meta_items'], 
+                ['name', 'thing', 'owner', 'description', 'price:amount', 'price:hold'], 
                 contractName, 
-                variableName, 
                 'likes'
             )
             delete result.key
@@ -155,7 +171,7 @@ module.exports = {
         }
     },
     forSale: async (ctx) => {
-        const { contractName, variableName } = ctx.request.body
+        const { contractName } = ctx.params
         let reclimit = parseInt(ctx.query.limit) || 20
         let offset = parseInt(ctx.query.offset) || 0;
         let reverse = -1
@@ -163,7 +179,7 @@ module.exports = {
             if (ctx.query.reverse === 'true') reverse = 1
         }
         
-        var match = { $match : { contractName, variableName, key: { $regex: /:price:amount$/ }}}
+        var match = { $match : { contractName, variableName: "S", key: { $regex: /:price:amount$/ }}}
         var sort1 = { $sort: { key: 1, blockNum: -1, txNonce: -1 }}
         var group = { $group: { _id: "$key", "value": {$first: "$value"}}}
         var sort2 = { $sort: { value: reverse }}
@@ -179,13 +195,12 @@ module.exports = {
         let results = await strapi.query('state').model
             .aggregate([facet])
             .collation(collation)
-
+        
         let returnList =  await Promise.all(results[0].data.map(async (result) => {
             await addMeta(
                 result, 
-                ['name', 'thing', 'owner', 'description', 'likes', 'meta_items', 'price:hold'], 
+                ['name', 'thing', 'owner', 'description', 'likes', 'meta_items'], 
                 contractName, 
-                variableName, 
                 'price:amount'
             )
             delete result.key
@@ -216,7 +231,6 @@ module.exports = {
             sanny, 
             values, 
             contractName, 
-            'S', 
             ''
         )
         delete sanny.key
@@ -238,9 +252,8 @@ module.exports = {
             let sanny = removeID(sanitizeEntity(result, { model: strapi.models.state }))
             await addMeta(
                 sanny, 
-                ['name', 'likes', 'owner', 'thing', 'description', 'price:amount', 'price:hold', 'meta_items'], 
+                ['name', 'likes', 'owner', 'thing', 'description', 'price:amount', 'price:hold'], 
                 contractName, 
-                variableName, 
                 'creator'
             )
             sanny.creator = sanny.value
@@ -250,13 +263,11 @@ module.exports = {
         }))  
     },
     likedOne: async (ctx) => {
-        let { contractName, variableName  } = ctx.request.body
-        let { account, uid } = ctx.params
+        let { contractName, account, uid } = ctx.params
 
-        console.log({contractName, variableName, account, uid })
         let stateResults = await strapi.query('state').model.findOne({ 
             contractName,
-            variableName,
+            variableName: 'S',
             key: `liked:${uid}:${account}`
         }, { "id": 0, "_id": 0, "__v": 0})
         .sort({blockNum: -1, txNonce: -1})  

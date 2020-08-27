@@ -113,40 +113,40 @@
       }
     },
     {
-      "method": "POST",
-      "path": "/things/owned/:owner",
+      "method": "GET",
+      "path": "/things/:contractName/owned/:owner",
       "handler": "things.owned",
       "config": {
         "policies": []
       }
     },
     {
-      "method": "POST",
-      "path": "/things/recent/",
+      "method": "GET",
+      "path": "/things/:contractName/recent/",
       "handler": "things.recent",
       "config": {
         "policies": []
       }
     },
     {
-      "method": "POST",
-      "path": "/things/liked/",
+      "method": "GET",
+      "path": "/things/:contractName/liked/",
       "handler": "things.liked",
       "config": {
         "policies": []
       }
     },
     {
-      "method": "POST",
-      "path": "/things/liked/:uid/:account",
+      "method": "GET",
+      "path": "/things/:contractName/liked/:uid/:account",
       "handler": "things.likedOne",
       "config": {
         "policies": []
       }
     },
     {
-      "method": "POST",
-      "path": "/things/forsale/",
+      "method": "GET",
+      "path": "/things/:contractName/forsale/",
       "handler": "things.forSale",
       "config": {
         "policies": []
