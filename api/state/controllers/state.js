@@ -29,7 +29,7 @@ const send = async (url) => {
             resp.on('end', () => {
                 try{
                     resolve(JSON.parse(data))
-                }catch(e){
+                }catch(err){
                     console.log(data);
                     console.log("Error: " + err.message);
                 }
