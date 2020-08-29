@@ -26,6 +26,7 @@ const send = async (url) => {
                 }catch(err){
                     console.log(data);
                     console.log("Error: " + err.message);
+                    resolve(0)
                 }
                 
             });
