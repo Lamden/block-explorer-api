@@ -21,7 +21,13 @@ const send = async (url) => {
         
             // The whole response has been received. Print out the result.
             resp.on('end', () => {
-                resolve(JSON.parse(data))
+                try{
+                    resolve(JSON.parse(data))
+                }catch(e){
+                    console.log(data);
+                    console.log("Error: " + err.message);
+                }
+                
             });
         }).on("error", (err) => {
             console.log("Error: " + err.message);

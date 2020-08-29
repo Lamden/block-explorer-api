@@ -68,9 +68,11 @@ const databaseLoader = (models) => {
         
             // The whole response has been received. Print out the result.
             resp.on('end', () => {
+
                 try{
                     callback(JSON.parse(data))
                 } catch (err){
+                    console.log(data)
                     console.log("Error: " + err.message);
                     callback({error: err.message})
                 }               
