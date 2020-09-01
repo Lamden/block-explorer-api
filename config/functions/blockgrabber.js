@@ -151,6 +151,7 @@ const databaseLoader = (models) => {
 
                         if (Array.isArray(tx.state)){
                             tx.state.forEach(s => {
+                                console.log(s)
                                 transaction.numOfStateChanges = transaction.numOfStateChanges + 1
                                 let state = new models.State({
                                     hash:  tx.hash,
@@ -160,9 +161,19 @@ const databaseLoader = (models) => {
                                     rawKey: s.key,
                                     contractName: s.key.split(":")[0].split(".")[0],
                                     variableName: s.key.split(":")[0].split(".")[1],
-                                    key: s.key.split(/:(.+)/)[1],
-                                    value: typeof s.value === 'string' ? s.value : JSON.stringify(s.value)
+                                    key: s.key.split(/:(.+)/)[1]
                                 })
+
+                                
+                                if (typeof state.value !== 'string'){
+                                    if (s.value === null) state.value = JSON.stringify(s.value)
+                                    else {
+                                        if (Object.keys(s.value).includes('__fixed__')) state.value = s.value.__fixed__
+                                        else state.value = JSON.stringify(s.value)
+                                    }
+                                }else{
+                                    state.value = s.value
+                                }
 
                                 state.keyIsAddress = isLamdenKey(state.key)
                                 state.keyContainsAddress = false
