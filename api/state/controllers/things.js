@@ -74,10 +74,7 @@ module.exports = {
             .aggregate([facet])
             .collation(collation)
 
-        console.log(results)
-
         let returnList =  await Promise.all(results[0].data.map(async (result) => {
-            console.log(result)
             let uid = result.key.split(":")[0]
             let res =  await strapi.query('state').model.findOne({ 
                 rawKey: `${contractName}.S:${uid}`

@@ -10,7 +10,6 @@ const DBPWD = process.env.DBPWD
 let connectionString = `mongodb://127.0.0.1:27017/block-explorer`
 
 if (DBUSER) {
-    console.log('DBUSER EXISTS: ' + DBUSER)
     connectionString = `mongodb://${DBUSER}:${DBPWD}@127.0.0.1:27017/block-explorer?authSource=admin`
 }
 
@@ -72,7 +71,6 @@ const databaseLoader = (models) => {
                 try{
                     callback(JSON.parse(data))
                 } catch (err){
-                    console.log(data)
                     console.log("Error: " + err.message);
                     callback({error: err.message})
                 }               
