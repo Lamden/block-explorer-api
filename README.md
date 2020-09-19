@@ -21,6 +21,11 @@ module.exports = ({ env }) => ({
 
 ```
 
+### Generate a secret token for the admin
+```bash
+echo "ADMIN_JWT_SECRET=`openssl rand 64 | base64`" > .env
+```
+
 ## Run
 ```
 npm run develop
