@@ -13,8 +13,11 @@ if (DBUSER) {
     connectionString = `mongodb://${DBUSER}:${DBPWD}@127.0.0.1:27017/block-explorer?authSource=admin`
 }
 
+var wipeOnStartup = false;
+if (typeof process.env.WIPE !== 'undefined') {
+    if (process.env.WIPE === 'yes')  wipeOnStartup = true;
+}
 
-var wipeOnStartup = process.env.WIPE === 'yes' ? true : false;
 
 const validators = require('types-validate-assert')
 const { validateTypes } = validators;
@@ -120,7 +123,7 @@ const databaseLoader = (models) => {
                         }).save()
                     })
 
-                    sb.transactions.forEach(tx => {
+                    sb.transactions.forEach( async tx => {
                         sb.numOfTransactions = sb.numOfTransactions + 1;
                         block.numOfTransactions = block.numOfTransactions + 1;
                         blockTxList.push(tx.hash)
@@ -149,7 +152,6 @@ const databaseLoader = (models) => {
 
                         if (Array.isArray(tx.state)){
                             tx.state.forEach(s => {
-                                console.log(s)
                                 transaction.numOfStateChanges = transaction.numOfStateChanges + 1
                                 let state = new models.State({
                                     hash:  tx.hash,
@@ -159,19 +161,9 @@ const databaseLoader = (models) => {
                                     rawKey: s.key,
                                     contractName: s.key.split(":")[0].split(".")[0],
                                     variableName: s.key.split(":")[0].split(".")[1],
-                                    key: s.key.split(/:(.+)/)[1]
+                                    key: s.key.split(/:(.+)/)[1],
+                                    value: s.value
                                 })
-
-                                
-                                if (typeof state.value !== 'string'){
-                                    if (s.value === null) state.value = JSON.stringify(s.value)
-                                    else {
-                                        if (Object.keys(s.value).includes('__fixed__')) state.value = s.value.__fixed__
-                                        else state.value = JSON.stringify(s.value)
-                                    }
-                                }else{
-                                    state.value = s.value
-                                }
 
                                 state.keyIsAddress = isLamdenKey(state.key)
                                 state.keyContainsAddress = false
@@ -186,6 +178,26 @@ const databaseLoader = (models) => {
                                 state.save();
                             })
                         }
+
+                        let stampInfo = await models.Stamps.findOne({contractName: transaction.contractName, functionName: transaction.functionName})
+                        if (!stampInfo){
+                            new models.Stamps({
+                                contractName: transaction.contractName,
+                                functionName: transaction.functionName,
+                                avg: transaction.stampsUsed,
+                                max: transaction.stampsUsed,
+                                min: transaction.stampsUsed,
+                                numOfTxs: 1
+                            }).save()
+                        }else{
+                            await models.Stamps.updateOne({contractName: transaction.contractName, functionName: transaction.functionName}, {
+                                min: transaction.stampsUsed < stampInfo.min ?  transaction.stampsUsed : stampInfo.min,
+                                max: transaction.stampsUsed > stampInfo.max ? transaction.stampsUsed : stampInfo.max,
+                                avg: Math.ceil((stampInfo.avg + transaction.stampsUsed) / 2 ),
+                                numOfTxs: stampInfo.numOfTxs + 1
+                            });
+                        }
+
                         transaction.save();
                     })
                     subblock.transactions = JSON.stringify(subblockTxList);
@@ -240,10 +252,9 @@ const databaseLoader = (models) => {
                     if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
                     if (currBatchMax > batchAmount) currBatchMax + batchAmount
                     for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
-                        let timedelay = (i - currBlockNum) * 250
+                        let timedelay = (i - currBlockNum) * 100
                         console.log('getting block: ' + i + " with delay of " + timedelay + 'ms')
                         setTimeout(() => getBlock_MN(i), 100 + timedelay);
-                        //getBlock_MN(i)
                     }
                 }
     

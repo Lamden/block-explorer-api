@@ -62,7 +62,16 @@ var state = new mongoose.Schema({
     keyIsAddress: Boolean,
     keyContainsAddress: Boolean,
     keys: String,
-    value: String
+    value: mongoose.Schema.Types.Mixed
+});
+
+var stamps = new mongoose.Schema({
+    contractName: String,
+    functionName: String,
+    max: Number,
+    min: Number,
+    avg: Number,
+    numOfTxs: Number
 });
 
 var Blocks = mongoose.model('Blocks', blocks, 'blocks');
@@ -70,5 +79,6 @@ var Subblocks = mongoose.model('Subblocks', subblocks, 'subblocks');
 var Transactions =mongoose.model('Transactions', transactions, 'transactions');
 var State = mongoose.model('State', state, 'state');
 var SubblockSigs = mongoose.model('SubblockSigs', subblockSigs, 'subblockSigs'); 
+var Stamps = mongoose.model('Stamps', stamps, 'stamps'); 
 
-module.exports = () => ({Blocks, Subblocks, Transactions, State, SubblockSigs});
+module.exports = () => ({Blocks, Subblocks, Transactions, State, SubblockSigs, Stamps});

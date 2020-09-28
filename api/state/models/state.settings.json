@@ -22,9 +22,6 @@
     "key": {
       "type": "string"
     },
-    "value": {
-      "type": "text"
-    },
     "blockNum": {
       "type": "integer"
     },
@@ -44,6 +41,9 @@
     "keyContainsAddress": {
       "type": "boolean",
       "default": false
+    },
+    "value": {
+      "type": "json"
     }
   }
 }
