@@ -21,6 +21,21 @@ module.exports = ({ env }) => ({
 
 ```
 
+### Create JWT token
+1. Generate a secure token.
+```bash
+openssl rand 64 | base64
+```
+2. Create .env file in root of the block-explorer-api directory
+```bash
+nano .env
+```
+3. Add token info (ctrl-x, "y" to exit and save)
+```javascript
+ADMIN_JWT_SECRET=token_generated_above
+URL=http://127.0.0.1
+```
+
 ## Run
 ```
 npm run develop
@@ -37,3 +52,5 @@ Login to the admin console at http://localhost:1337/admin
 - Under Application click "Select All" beside each Section
 - Deselect "count", "create" and "delete" for each Section
 - Click "Save"
+
+
