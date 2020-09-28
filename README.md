@@ -41,6 +41,16 @@ URL=http://127.0.0.1
 npm run develop
 ```
 
+## Run with PM2
+1. Download PM2
+```bash
+npm install pm2 -g
+```
+2. Run with PM2
+```bash
+pm2 start npm --name "block-explorer-api" -- prod-nowipe
+```
+
 ## Admin Console
 Login to the admin console at http://localhost:1337/admin
 
