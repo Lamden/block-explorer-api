@@ -18,7 +18,7 @@
     },
     {
       "method": "GET",
-      "path": "/stamps/:id",
+      "path": "/stamps/:contractName/:functionName",
       "handler": "stamps.findOne",
       "config": {
         "policies": []
