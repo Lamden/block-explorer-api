@@ -33,7 +33,7 @@ nano .env
 3. Add token info (ctrl-x, "y" to exit and save)
 ```javascript
 ADMIN_JWT_SECRET=token_generated_above
-URL=http://127.0.0.1
+URL=http://127.0.0.1/api
 ```
 
 ## Run
@@ -48,7 +48,7 @@ npm install pm2 -g
 ```
 2. Run with PM2
 ```bash
-pm2 start npm --name "block-explorer-api" -- prod-nowipe
+pm2 start npm --name "block-explorer-api" -- run prod-nowipe
 ```
 
 ## Admin Console
