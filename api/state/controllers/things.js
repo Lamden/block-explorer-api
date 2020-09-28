@@ -2,28 +2,33 @@
 const { sanitizeEntity } = require('strapi-utils');
 
 const removeID = (obj) => {
-    try{
-       delete obj.id
-       delete obj.keyIsAddress
-       delete obj.keyContainsAddress
-       delete obj.keys
-    }catch(e){}
+    try{ delete obj.id }catch(e){}
+    try{ delete obj.keyIsAddress }catch(e){}
+    try{ delete obj.keyContainsAddress }catch(e){}
+    try{ delete obj.keys }catch(e){}
     return obj
 }
-const addMeta = async (result, values, contractName, replace) => {
-    values.push('meta_items')
-    let raw = `${contractName}.S:`
+const removeOther = (obj) => {
+    try{ delete obj.txNonce }catch(e){}
+    try{ delete obj.subBlockNum }catch(e){}
+    try{ delete obj.rawKey }catch(e){}
+    try{ delete obj.contractName }catch(e){}
+    try{ delete obj.variableName }catch(e){}
+    return obj
+}
+const addMeta = async (result, contractName, values = undefined) => {
+    let key = result.key.includes(':') ? result.key.split(":")[0] : result.key
+    if (typeof values === 'undefined'){
+        values = await strapi.query('state').model.findOne({ rawKey: `${contractName}.S:${key}` }).then(res => res.value)
+    }
+        
     const queryMeta = async (getMeta) => {
-        let meta =  await strapi.query('state').model.find({ 
-            rawKey: `${raw}${result.key.replace(`:${replace}`, `:${getMeta}`)}`
-        })
-
+        let meta =  await strapi.query('state').model.find({ rawKey: `${contractName}.S:${key}:${getMeta}` })
         .sort({blockNum: -1, txNonce: -1})
         .limit(1)
+
         try{
             if (meta[0] && !result.uid) result.uid = JSON.parse(meta[0].keys)[0]
-            if (getMeta === 'price:amount') return parseFloat(meta[0].value, 8)
-            if (getMeta === 'likes') return parseInt(meta[0].value)
             else return meta[0].value
         }catch (e){
             return undefined
@@ -32,10 +37,10 @@ const addMeta = async (result, values, contractName, replace) => {
 
     let returnResult =  await Promise.all(values.map(async (value) => {
         if (value === 'meta_items'){
-            let metaItems = JSON.parse(await queryMeta(value))
+            let metaItems = await queryMeta(value)
             await Promise.all(metaItems.map(async (item) => {
                 let metaValue = await queryMeta(`meta:${item}`)
-                result[item] = JSON.parse(metaValue)
+                result[item] = metaValue
             }))
         }else{
             let metaValue = await queryMeta(value)
@@ -75,21 +80,16 @@ module.exports = {
             .collation(collation)
 
         let returnList =  await Promise.all(results[0].data.map(async (result) => {
-            let uid = result.key.split(":")[0]
-            let res =  await strapi.query('state').model.findOne({ 
-                rawKey: `${contractName}.S:${uid}`
-            })
             let sanny = removeID(sanitizeEntity(result, { model: strapi.models.state }))
             await addMeta(
                 sanny, 
-                JSON.parse(res.value), 
-                contractName, 
-                'owner'
+                contractName
             )
 
             sanny.owner = owner
             delete sanny.value
-            return sanny
+            delete sanny.key
+            return removeOther(sanny)
 
         }))  
         return {
@@ -115,14 +115,11 @@ module.exports = {
             let sanny = removeID(sanitizeEntity(result, { model: strapi.models.state }))
             await addMeta(
                 sanny, 
-                ['name', 'likes', 'owner', 'description', 'price:amount', 'price:hold'], 
-                contractName, 
-                'thing'
+                contractName
             )
-            sanny.thing = sanny.value
             delete sanny.key
             delete sanny.value
-            return sanny          
+            return removeOther(sanny)         
         }))  
     },
     liked: async (ctx) => {
@@ -154,9 +151,7 @@ module.exports = {
         let returnList =  await Promise.all(results[0].data.map(async (result) => {
             await addMeta(
                 result, 
-                ['name', 'thing', 'owner', 'description', 'price:amount', 'price:hold'], 
-                contractName, 
-                'likes'
+                contractName
             )
             delete result.key
             return result
@@ -182,26 +177,24 @@ module.exports = {
         var sort2 = { $sort: { value: reverse }}
         var skip = { $skip: offset }
         var limit = { $limit: reclimit}
+        var match2 = { $match: { 'value': {$gt: 0} } }
         var project = { $project: {key: "$_id", "price:amount": "$value", "_id": 0}}
         let count = { $count : "count"}
-        let dataPipeline = [match, sort1, group, sort2, skip, limit,  project]
-        let countPipeline = [match, sort1, group, sort2, project, count]
+        let dataPipeline = [match, sort1, group, sort2, skip, limit, match2, project]
+        let countPipeline = [match, sort1, group, sort2, match2, project, count]
         let facet = { $facet: {data: dataPipeline, "count": countPipeline}}
         let collation = { locale : "en_US", numericOrdering : true }
 
         let results = await strapi.query('state').model
             .aggregate([facet])
             .collation(collation)
-        
+
         let returnList =  await Promise.all(results[0].data.map(async (result) => {
             await addMeta(
-                result, 
-                ['name', 'thing', 'owner', 'description', 'likes', 'meta_items'], 
-                contractName, 
-                'price:amount'
+                result,  
+                contractName
             )
             delete result.key
-            result['price:amount'] = JSON.parse(result['price:amount'])
             return result
         }))  
 
@@ -218,28 +211,23 @@ module.exports = {
             variableName: 'S',
             key: uid,
         }, { "id": 0, "_id": 0, "__v": 0})
-        let values = thingResult.value.replace(/\[|\]|\"/g,'').split(',')
-        if (!values.includes("meta_items")) values.push("meta_items")
-
-        thingResult.key = thingResult.key + ":"
 
         let sanny = removeID(sanitizeEntity(thingResult, { model: strapi.models.state }))
         await addMeta(
             sanny, 
-            values, 
-            contractName, 
-            ''
+            contractName,
+            sanny.value
         )
         delete sanny.key
-        return sanny
+        delete sanny.value
+        return removeOther(sanny)
     },
     created: async (ctx) => {
-        let { contractName, variableName } = ctx.request.body
-        let { creator } = ctx.params
+        let { contractName, creator } = ctx.params
 
         let stateResults = await strapi.query('state').model.find({ 
             contractName,
-            variableName,
+            variableName: 'S',
             key: { $regex: /:creator$/ },
             value: creator
         }, { "id": 0, "_id": 0, "__v": 0})
@@ -249,14 +237,12 @@ module.exports = {
             let sanny = removeID(sanitizeEntity(result, { model: strapi.models.state }))
             await addMeta(
                 sanny, 
-                ['name', 'likes', 'owner', 'thing', 'description', 'price:amount', 'price:hold'], 
-                contractName, 
-                'creator'
+                contractName
             )
             sanny.creator = sanny.value
             delete sanny.key
             delete sanny.value
-            return sanny          
+            return removeOther(sanny)          
         }))  
     },
     likedOne: async (ctx) => {

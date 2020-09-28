@@ -161,8 +161,8 @@
       }
     },
     {
-      "method": "POST",
-      "path": "/things/created/:creator",
+      "method": "GET",
+      "path": "/things/:contractName/created/:creator",
       "handler": "things.created",
       "config": {
         "policies": []
