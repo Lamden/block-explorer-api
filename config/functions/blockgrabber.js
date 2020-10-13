@@ -28,7 +28,7 @@ const isLamdenKey = ( key ) => {
 };
 
 const databaseLoader = (models) => {
-    let currBlockNum = 1;
+    let currBlockNum = 0;
     let checkNextIn = 0;
     let maxCheckCount = 10;
     let alreadyCheckedCount = 0;
@@ -36,7 +36,7 @@ const databaseLoader = (models) => {
     const route_getLastestBlock = '/latest_block'
     let lastestBlockNum = 0;
     let currBatchMax = 0;
-    let batchAmount = 25;
+    let batchAmount = 100;
     let timerId;
 
     const wipeDB = async () => {
@@ -252,7 +252,7 @@ const databaseLoader = (models) => {
                     if (currBatchMax > lastestBlockNum) currBatchMax = lastestBlockNum;
                     if (currBatchMax > batchAmount) currBatchMax + batchAmount
                     for (let i = currBlockNum + 1; i <= currBatchMax; i++) {
-                        let timedelay = (i - currBlockNum) * 100
+                        let timedelay = (i - currBlockNum)
                         console.log('getting block: ' + i + " with delay of " + timedelay + 'ms')
                         setTimeout(() => getBlock_MN(i), 100 + timedelay);
                     }
