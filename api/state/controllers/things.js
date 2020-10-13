@@ -209,7 +209,6 @@ module.exports = {
     },
     getOne: async (ctx) => {
         const { uid, contractName } = ctx.params
-        console.log(ctx.params)
 
         let thingResult = await strapi.query('state').model.findOne({ 
             contractName,
@@ -218,14 +217,21 @@ module.exports = {
         }, { "id": 0, "_id": 0, "__v": 0})
 
         let sanny = removeID(sanitizeEntity(thingResult, { model: strapi.models.state }))
-        await addMeta(
-            sanny, 
-            contractName,
-            sanny.value
-        )
-        delete sanny.key
-        delete sanny.value
-        return removeOther(sanny)
+
+        if (sanny){
+            console.log('in here?')
+            await addMeta(
+                sanny, 
+                contractName,
+                sanny.value
+            )
+            delete sanny.key
+            delete sanny.value
+            return removeOther(sanny)
+        }else{
+            return null
+        }
+
     },
     created: async (ctx) => {
         let { contractName, creator } = ctx.params
