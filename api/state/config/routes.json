@@ -57,6 +57,14 @@
       }
     },
     {
+      "method": "POST",
+      "path": "/states/history/getKeys",
+      "handler": "state.getKeys",
+      "config": {
+        "policies": []
+      }
+    },
+    {
       "method": "GET",
       "path": "/states/history/:contractName/:variableName/value/:value",
       "handler": "state.hasValue",
