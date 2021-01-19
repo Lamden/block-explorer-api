@@ -121,7 +121,7 @@ module.exports = {
             .then(result => {
                 return {
                     key: `${job.contractName}.${job.variableName}:${job.key}`,
-                    value: result?.value || null
+                    value: result ? result.value : null
                 }
             })
         })
