@@ -105,6 +105,29 @@ module.exports = {
                 transaction: JSON.parse(txInfo.transaction)}
         }))  
     },
+    getKeys: async (ctx) => {
+        const { body } = ctx.request
+
+        if (!Array.isArray(body)) return {}
+
+        let stateQueries = body.map(job => {
+            return strapi.query('state').model.findOne({ 
+                contractName: job.contractName,
+                variableName:  job.variableName,
+                key: job.key
+            }, { "id": 0, "_id": 0, "__v": 0})
+            .sort({blockNum: -1, txNonce: -1})
+            .limit(1)
+            .then(result => {
+                return {
+                    key: `${job.contractName}.${job.variableName}:${job.key}`,
+                    value: result?.value || null
+                }
+            })
+        })
+        let results = await Promise.all(stateQueries)
+        return results || []
+    },
     hasValue: async (ctx) => {
         let reclimit = parseInt(ctx.query.limit) || 100
         let sort = parseInt(ctx.query.sort) || -1
