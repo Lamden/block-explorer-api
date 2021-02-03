@@ -155,6 +155,12 @@ const databaseLoader = (models) => {
                         subblockTxList.push(tx.hash)
                         
                         // store the transaction in the database
+
+                        /* 
+                            If you are using this script to grab transactions against a specific smart contract only,
+                            then you can filter this logic by checking tx.transaction.payload.contract against the
+                            contract name you want.
+                        */
                         let transaction = new models.Transactions({
                             hash:  tx.hash,
                             result: tx.result, 
