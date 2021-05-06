@@ -292,7 +292,7 @@ const databaseLoader = () => {
 									if (["__code__", "__developer__", "__compiled__",  "__owner__", "__submitted__"].includes(state.variableName)){
 										let contractInfo = await models.Contracts.findOne({contractName: state.contractName})
 										if (contractInfo){
-											const property = state.variableName.replaceAll("__","")
+											const property = state.variableName.replace(/__/g,"")
 											await models.Contracts.updateOne({contractName: state.contractName}, {
 												[property]: state.value || ""
 											});
@@ -366,13 +366,21 @@ const databaseLoader = () => {
 	};
 
 	const checkForBlocks = async () => {
+		const waitAndCheck = () => {
+			console.log("Could not contact masternode, trying again in 10 seconds");
+			timerId = setTimeout(checkForBlocks, 10000);
+		}
         if(DEBUG_ON){
             console.log("checking")
 		}
 		
 		let response = await getLatestBlock_MN();		
 
-		if (response && !response.error) {
+		if (response) {
+			if (response.error){
+				 waitAndCheck()
+				 return
+			}
 
 			lastestBlockNum = response.number;
 
@@ -428,8 +436,7 @@ const databaseLoader = () => {
 				}
 			}
 		} else {
-			console.log("Could not contact masternode, trying again in 10 seconds");
-			timerId = setTimeout(checkForBlocks, 10000);
+			waitAndCheck()
 		}
 	};
 
