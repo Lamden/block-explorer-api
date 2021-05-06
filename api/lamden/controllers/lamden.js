@@ -5,44 +5,31 @@
  * to customize this controller
  */
 
-const https = require('https');
 const CoinpaprikaAPI = require('@coinpaprika/api-nodejs-client');
 const client = new CoinpaprikaAPI();
 
-const send = async (url) => {
-    return new Promise( (resolve) => {
-        https.get(url, (resp) => {
-            let data = '';
-        
-            // A chunk of data has been recieved.
-            resp.on('data', (chunk) => {
-            data += chunk;
-            });
-        
-            // The whole response has been received. Print out the result.
-            resp.on('end', () => {
-                try{
-                    resolve(JSON.parse(data))
-                }catch(err){
-                    console.log("Error: " + err.message);
-                    resolve(0)
-                }
-                
-            });
-        }).on("error", (err) => {
-            console.log("Error: " + err.message);
-            resolve({value: null})
-        });
-    });
-}
+var lastcalled;
+var priceRes;
 
 module.exports = {
     getPrice: async () => {
-        let results = await client.getTicker({coinId: 'tau-lamden'})
+        let results = priceRes;
+        if (!priceRes || new Date() - lastcalled > 300000) {
+            console.log("refreshing price info")
+            lastcalled = new Date()
+            results = await client.getTicker({coinId: 'tau-lamden'})
+            priceRes = results
+        }
         return results
     },
     getStamps: async () => {
-        let results = await send(`${strapi.config.lamden.masternode()}/contracts/stamp_cost/S?key=value`);
-        return results
+        let results = await strapi.query('state').model.findOne({ 
+            contractName: "stamp_cost",
+            variableName:  "S",
+            key: "value"
+        }, { "id": 0, "_id": 0, "__v": 0})
+        .sort({blockNum: -1, txNonce: -1})
+
+        return {value: results.value}
     }
 }

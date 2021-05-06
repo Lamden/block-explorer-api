@@ -42,8 +42,6 @@ module.exports = {
         })
         return { data, count };
     },
-    
-
     findOneNumber: async ctx => {
         let results = await strapi.query('blocks').model.find({ blockNum: ctx.params.num }, { "id": 0, "_id": 0, "__v": 0})
 

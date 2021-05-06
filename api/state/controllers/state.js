@@ -83,7 +83,7 @@ module.exports = {
                 transaction: JSON.parse(txInfo.transaction)}
         }))  
     },
-    getKey: async (ctx) => {
+    getKeyHistory: async (ctx) => {
         let reclimit = parseInt(ctx.query.limit) || 100
         let sort = parseInt(ctx.query.sort) || -1
         let stateResults = await strapi.query('state').model.find({ 
@@ -104,6 +104,18 @@ module.exports = {
                 ...removeID(sanitizeEntity(result, { model: strapi.models.state })),
                 transaction: JSON.parse(txInfo.transaction)}
         }))  
+    },
+    getKey: async (ctx) => {
+        let result = await strapi.query('state').model.findOne({ 
+            contractName: ctx.params.contractName,
+            variableName:  ctx.params.variableName,
+            key: ctx.params.key
+        }, { "id": 0, "_id": 0, "__v": 0})
+        .sort({blockNum: -1, txNonce: -1})
+
+        console.log(result)
+
+        return {value: result.value || null}
     },
     getKeys: async (ctx) => {
         const { body } = ctx.request
@@ -146,9 +158,9 @@ module.exports = {
         return res
     },
     getTotalContracts: async () => {
-        let res = await send(`${strapi.config.lamden.masternode()}/contracts`)
         try{
-            return res.contracts.length
+            let contracts =  await strapi.query('contracts').model.find()
+            return contracts.length
         }catch (e){
             return 0;
         }

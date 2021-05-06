@@ -5,8 +5,9 @@ const validators = require('types-validate-assert')
 const { validateTypes } = validators;
 const mongoose = require('mongoose');
 let db = mongoose;
-
+const genesis_contracts = require('../genesis_contracts.json')
 let DEBUG_ON = process.env.DEBUG_ON || false
+const INITIAL_STAMPS = parseInt(process.env.INITIAL_STAMPS) || 13
 
  /******* MONGO DB CONNECTION INFO **/
 const DBUSER = process.env.DBUSER
@@ -36,6 +37,7 @@ const isLamdenKey = ( key ) => {
 };
 
 const databaseLoader = () => {
+
     const START_AT_BLOCK_NUMBER = 0
     let models = strapi.config.mongooseModels
 
@@ -49,6 +51,44 @@ const databaseLoader = () => {
 	let currBatchMax = 0;
 	let batchAmount = 50;
 	let timerId;
+
+	async function setInitalState(){
+		let states = await models.State.find({})
+		if (states.length === 0) {
+			console.log("Setting initial State")
+			await new models.State({
+				hash:  "genesis_stamp_ratio",
+				txNonce: 0,
+				blockNum: 0,
+				subBlockNum: 0,
+				rawKey: "stamp_cost.S:value",
+				contractName: "stamp_cost",
+				variableName: "S",
+				key: "value",
+				value: INITIAL_STAMPS
+			}).save()
+		}
+		let contracts = await models.Contracts.find({})
+		if (contracts.length === 0) {
+			console.log("Setting initial Contracts")
+			genesis_contracts.forEach(async (contract)=>{
+				await new models.State({
+					blockNum: 0,
+					subBlockNum: 0,
+					hash:  "genesis_"+contract.name,
+					sender: "",
+					contractName: contract.name,
+					totalStamps: 0,
+					developer: "",
+					compiled: "",
+					submitted: "",
+					owner: contract.owner,
+					code: contract.code,
+					timestamp: 0
+				}).save()
+			})
+		}
+	}
 
 	const wipeDB = async (force = false) => {
 		console.log("-----WIPING DATABASE-----");
@@ -64,16 +104,28 @@ const databaseLoader = () => {
 			console.log(res)
 		);
 		console.log("SubblockSigs DB wiped");
-		await db.models.State.deleteMany({}).then((res) => console.log(res));
+		await db.models.State.deleteMany({}).then(async (res) => {
+			console.log(res)
+			await setInitalState();
+		});
 		console.log("State DB wiped");
 		await db.models.Transactions.deleteMany({}).then((res) =>
 			console.log(res)
 		);
 		console.log("Transactions DB wiped");
+		await db.models.Stamps.deleteMany({}).then((res) =>
+			console.log(res)
+		);
+		console.log("Stamps DB wiped");
+		await db.models.Contracts.deleteMany({}).then((res) =>
+			console.log(res)
+		);
+		console.log("Contracts DB wiped");
 
 		currBlockNum = START_AT_BLOCK_NUMBER;
 
 		console.log(`Set currBlockNum = ${START_AT_BLOCK_NUMBER}`);
+		
 		timerId = setTimeout(checkForBlocks, 500);
 	};
 
@@ -114,7 +166,8 @@ const databaseLoader = () => {
 			let block = await models.Blocks.findOne({blockNum})
 			if (!block){
 				console.log("Block doesn't exists, adding new BLOCK model")
-				block = new models.Blocks({
+				
+				block = await new models.Blocks({
 					rawBlock: JSON.stringify(blockInfo),
 					blockNum,
 					hash: blockInfo.hash,
@@ -135,10 +188,10 @@ const databaseLoader = () => {
 
 			let blockTxList = [];
 			if (typeof blockInfo.subblocks !== "undefined") {
-				blockInfo.subblocks.forEach((sb) => {
+				blockInfo.subblocks.forEach(async (sb) => {
 					block.numOfSubBlocks = block.numOfSubBlocks + 1;
 					let subblockTxList = [];
-					let subblock = new models.Subblocks({
+					let subblock = await new models.Subblocks({
 						blockNum,
 						inputHash: sb.input_hash,
 						merkleLeaves: JSON.stringify(sb.merkle_leaves),
@@ -149,107 +202,137 @@ const databaseLoader = () => {
 						transactions: JSON.stringify([])
 					});
 
-					sb.signatures.forEach((sig) => {
-						new models.SubblockSigs({
+					sb.signatures.forEach(async (sig) => {
+						await new models.SubblockSigs({
 							blockNum,
 							subBlockNum: sb.subblock,
 							signature: sig.signature,
 							signer: sig.signer
 						}).save();
 					});
-                    // console.log(sb.transactions);
+					// console.log(sb.transactions);
+					let hashesProcessed  = []
                     sb.transactions.forEach( async (tx) => {
-                        sb.numOfTransactions = sb.numOfTransactions + 1;
-                        block.numOfTransactions = block.numOfTransactions + 1;
-                        blockTxList.push(tx.hash)
-                        subblockTxList.push(tx.hash)
-                        
-                        // store the transaction in the database
-
-                        /* 
-                            If you are using this script to grab transactions against a specific smart contract only,
-                            then you can filter this logic by checking tx.transaction.payload.contract against the
-                            contract name you want.
-                        */
-                        let transaction = new models.Transactions({
-                            hash:  tx.hash,
-                            result: tx.result, 
-                            stampsUsed: tx.stamps_used,
-                            status:   tx.status,
-                            transaction:  JSON.stringify(tx.transaction) || undefined, 
-                            state: JSON.stringify(tx.state) || undefined,
-                            blockNum: blockInfo.number,
-                            subBlockNum: sb.subblock,
-                            contractName: tx.transaction.payload.contract,
-                            functionName: tx.transaction.payload.function,
-                            nonce: tx.transaction.payload.nonce,
-                            processor: tx.transaction.payload.processor,
-                            sender: tx.transaction.payload.sender,
-                            stampsSupplied: tx.transaction.payload.stamps_supplied,
-                            kwargs: JSON.stringify(tx.transaction.payload.kwargs),
-                            timestamp: new Date(tx.transaction.metadata.timestamp * 1000),
-                            signature: tx.transaction.metadata.signature,
-                            numOfStateChanges: 0
-                        })
-                        
-                        // parse and store the state changes from each transaction in the database
-                        if (Array.isArray(tx.state)){
-                            tx.state.forEach(s => {
-                                transaction.numOfStateChanges = transaction.numOfStateChanges + 1
-                                let state = new models.State({
-                                    hash:  tx.hash,
-                                    txNonce: tx.transaction.payload.nonce,
-                                    blockNum: blockInfo.number,
-                                    subBlockNum: sb.subblock,
-                                    rawKey: s.key,
-                                    contractName: s.key.split(":")[0].split(".")[0],
-                                    variableName: s.key.split(":")[0].split(".")[1],
-                                    key: s.key.split(/:(.+)/)[1],
-                                    value: s.value
-                                })
-
-                                state.keyIsAddress = isLamdenKey(state.key)
-                                state.keyContainsAddress = false
-                                let stateKeys = []
-                                if (state.key){
-                                    state.key.split(":").forEach(k => {
-                                        stateKeys.push(k)
-                                        if (isLamdenKey(k)) state.keyContainsAddress = true
-                                    })
-                                }
-                                state.keys = JSON.stringify(stateKeys)
-                                state.save();
-                            })
-                        }
-
-                        // determine the stamps costs for each contracts methods and store the min, max, average and stats
-                        let stampInfo = await models.Stamps.findOne({contractName: transaction.contractName, functionName: transaction.functionName})
-                        if (!stampInfo){
-                            new models.Stamps({
-                                contractName: transaction.contractName,
-                                functionName: transaction.functionName,
-                                avg: transaction.stampsUsed,
-                                max: transaction.stampsUsed,
-                                min: transaction.stampsUsed,
-                                numOfTxs: 1
-                            }).save()
-                        }else{
-                            await models.Stamps.updateOne({contractName: transaction.contractName, functionName: transaction.functionName}, {
-                                min: transaction.stampsUsed < stampInfo.min ?  transaction.stampsUsed : stampInfo.min,
-                                max: transaction.stampsUsed > stampInfo.max ? transaction.stampsUsed : stampInfo.max,
-                                avg: Math.ceil((stampInfo.avg + transaction.stampsUsed) / 2 ),
-                                numOfTxs: stampInfo.numOfTxs + 1
-                            });
-                        }
-
-                        transaction.save();
+						if (!hashesProcessed.includes(tx.hash)){
+							hashesProcessed.push(tx.hash)
+							sb.numOfTransactions = sb.numOfTransactions + 1;
+							block.numOfTransactions = block.numOfTransactions + 1;
+							blockTxList.push(tx.hash)
+							subblockTxList.push(tx.hash)
+							
+							// store the transaction in the database
+	
+							/* 
+								If you are using this script to grab transactions against a specific smart contract only,
+								then you can filter this logic by checking tx.transaction.payload.contract against the
+								contract name you want.
+							*/
+							let transaction = await new models.Transactions({
+								hash:  tx.hash,
+								result: tx.result, 
+								stampsUsed: tx.stamps_used,
+								status:   tx.status,
+								transaction:  JSON.stringify(tx.transaction) || undefined, 
+								state: JSON.stringify(tx.state) || undefined,
+								blockNum: blockInfo.number,
+								subBlockNum: sb.subblock,
+								contractName: tx.transaction.payload.contract,
+								functionName: tx.transaction.payload.function,
+								nonce: tx.transaction.payload.nonce,
+								processor: tx.transaction.payload.processor,
+								sender: tx.transaction.payload.sender,
+								stampsSupplied: tx.transaction.payload.stamps_supplied,
+								kwargs: JSON.stringify(tx.transaction.payload.kwargs),
+								timestamp: new Date(tx.transaction.metadata.timestamp * 1000),
+								signature: tx.transaction.metadata.signature,
+								numOfStateChanges: 0
+							})
+							
+							if (transaction.contractName === "submission" && 
+								transaction.functionName === "submit_contract" &&  
+								parseInt(tx.status) === 0){
+								await new models.Contracts({
+									blockNum: blockInfo.number,
+									subBlockNum: sb.subblock,
+									hash:  tx.hash,
+									sender: tx.transaction.payload.sender,
+									timestamp: new Date(tx.transaction.metadata.timestamp * 1000),
+									contractName: tx.transaction.payload.kwargs.name
+								}).save()
+							}
+							
+							// parse and store the state changes from each transaction in the database
+							if (Array.isArray(tx.state)){
+								tx.state.forEach(async (s) => {
+									transaction.numOfStateChanges = transaction.numOfStateChanges + 1
+									let state = await new models.State({
+										hash:  tx.hash,
+										txNonce: tx.transaction.payload.nonce,
+										blockNum: blockInfo.number,
+										subBlockNum: sb.subblock,
+										rawKey: s.key,
+										contractName: s.key.split(":")[0].split(".")[0],
+										variableName: s.key.split(":")[0].split(".")[1],
+										key: s.key.split(/:(.+)/)[1],
+										value: s.value
+									})				
+	
+									state.keyIsAddress = isLamdenKey(state.key)
+									state.keyContainsAddress = false
+									let stateKeys = []
+									if (state.key){
+										state.key.split(":").forEach(k => {
+											stateKeys.push(k)
+											if (isLamdenKey(k)) state.keyContainsAddress = true
+										})
+									}
+									
+									state.keys = JSON.stringify(stateKeys)
+									
+									if (["__code__", "__developer__", "__compiled__",  "__owner__", "__submitted__"].includes(state.variableName)){
+										let contractInfo = await models.Contracts.findOne({contractName: state.contractName})
+										if (contractInfo){
+											const property = state.variableName.replaceAll("__","")
+											await models.Contracts.updateOne({contractName: state.contractName}, {
+												[property]: state.value || ""
+											});
+										}
+									}
+	
+									await state.save();
+								})
+							}
+							// determine the stamps costs for each contracts methods and store the min, max, average and stats
+							let stampInfo = await models.Stamps.findOne({contractName: transaction.contractName, functionName: transaction.functionName})
+							if (!stampInfo){
+								await new models.Stamps({
+									contractName: transaction.contractName,
+									functionName: transaction.functionName,
+									avg: transaction.stampsUsed,
+									max: transaction.stampsUsed,
+									min: transaction.stampsUsed,
+									numOfTxs: 1,
+									total: transaction.stampsUsed
+								}).save()
+							}else{
+								await models.Stamps.updateOne({contractName: transaction.contractName, functionName: transaction.functionName}, {
+									min: transaction.stampsUsed < stampInfo.min ?  transaction.stampsUsed : stampInfo.min,
+									max: transaction.stampsUsed > stampInfo.max ? transaction.stampsUsed : stampInfo.max,
+									numOfTxs: stampInfo.numOfTxs + 1,
+									total: stampInfo.total + transaction.stampsUsed,
+									avg: Math.ceil((stampInfo.total + transaction.stampsUsed) / (stampInfo.numOfTxs + 1))
+								});
+							}
+	
+							await transaction.save();
+						}
                     })
 					subblock.transactions = JSON.stringify(subblockTxList);
-					subblock.save();
+					await subblock.save();
 				});
 			}
 			block.transactions = JSON.stringify(blockTxList);
-			block.save(function(err) {
+			await block.save(function(err) {
 				if (err) console.log(err);
 				console.log("saved " + blockNum);
 			});
@@ -285,10 +368,11 @@ const databaseLoader = () => {
 	const checkForBlocks = async () => {
         if(DEBUG_ON){
             console.log("checking")
-        }
-		let response = await getLatestBlock_MN();
+		}
 		
-		if (!response.error) {
+		let response = await getLatestBlock_MN();		
+
+		if (response && !response?.error) {
 
 			lastestBlockNum = response.number;
 
@@ -354,10 +438,10 @@ const databaseLoader = () => {
 		.then(async (res) => {
 			if (res) currBlockNum = res.blockNum ? res.blockNum : 0;
 			else currBlockNum = 0;
+			await setInitalState();
 			timerId = setTimeout(checkForBlocks, 0);
 		});
 };
-
 
 module.exports = () => {
     db.connect(connectionString, {useNewUrlParser: true, useUnifiedTopology: true}, (error) => {

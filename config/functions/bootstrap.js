@@ -15,7 +15,6 @@ module.exports = () => {
     if (!strapi.config.lamden) throw new Error('No lamden config found. Follow Readme.md to create config/lamden.js with masternode info.')
     //add random masternode function
     strapi.config.lamden.masternode = () => {return strapi.config.lamden.masternodes[Math.floor(Math.random() * strapi.config.lamden.masternodes.length)]}
-
     //Start background block grabber
     blockgrabber()
 };

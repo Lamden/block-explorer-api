@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "contracts",
+  "info": {
+    "name": "contracts"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true
+  },
+  "attributes": {
+    "contractName": {
+      "type": "string"
+    },
+    "hash": {
+      "type": "string"
+    },
+    "blockNum": {
+      "type": "biginteger"
+    },
+    "subBlockNum": {
+      "type": "integer"
+    },
+    "totalStamps": {
+      "type": "biginteger"
+    },
+    "timestamps": {
+      "type": "datetime"
+    },
+    "sender": {
+      "type": "string"
+    },
+    "code": {
+      "type": "text"
+    },
+    "developer": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "submitted": {
+      "type": "json"
+    },
+    "compiled": {
+      "type": "json"
+    }
+  }
+}

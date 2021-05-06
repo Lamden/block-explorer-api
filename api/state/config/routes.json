@@ -50,8 +50,16 @@
     },
     {
       "method": "GET",
-      "path": "/states/history/:contractName/:variableName/:key",
+      "path": "/states/:contractName/:variableName/:key",
       "handler": "state.getKey",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/states/history/:contractName/:variableName/:key",
+      "handler": "state.getKeyHistory",
       "config": {
         "policies": []
       }
