@@ -372,7 +372,7 @@ const databaseLoader = () => {
 		
 		let response = await getLatestBlock_MN();		
 
-		if (response && !response?.error) {
+		if (response && !response.error) {
 
 			lastestBlockNum = response.number;
 
