@@ -121,6 +121,10 @@ const databaseLoader = () => {
 			console.log(res)
 		);
 		console.log("Contracts DB wiped");
+		await db.models.CurrentState.deleteMany({}).then((res) =>
+			console.log(res)
+		);
+		console.log("CurrentState DB wiped");
 
 		currBlockNum = START_AT_BLOCK_NUMBER;
 
