@@ -106,34 +106,40 @@ module.exports = {
         }))  
     },
     getKey: async (ctx) => {
-        let result = await strapi.query('state').model.findOne({ 
+        if (!ctx.params.contractName || !ctx.params.variableName || !ctx.params.key) return {value: null}
+        let result = await strapi.query('current-state').model.findOne({ 
             contractName: ctx.params.contractName,
             variableName:  ctx.params.variableName,
             key: ctx.params.key
         }, { "id": 0, "_id": 0, "__v": 0})
-        .sort({blockNum: -1, txNonce: -1})
 
         console.log(result)
-
-        return {value: result.value || null}
+        return {value: result ? result.value : null }
     },
     getKeys: async (ctx) => {
         const { body } = ctx.request
+        console.log(strapi.models)
 
         if (!Array.isArray(body)) return {}
 
         let stateQueries = body.map(job => {
-            return strapi.query('state').model.findOne({ 
+            return strapi.query('current-state').model.findOne({ 
                 contractName: job.contractName,
                 variableName:  job.variableName,
                 key: job.key
             }, { "id": 0, "_id": 0, "__v": 0})
-            .sort({blockNum: -1, txNonce: -1})
-            .limit(1)
             .then(result => {
-                return {
-                    key: `${job.contractName}.${job.variableName}:${job.key}`,
-                    value: result ? result.value : null
+                if (!result) {
+                    return {
+                        key: `${job.contractName}.${job.variableName}:${job.key}`,
+                        value: null
+                    }
+                }
+                else {
+                    return {
+                        key: `${job.contractName}.${job.variableName}:${job.key}`,
+                        value: result ? result.value : null
+                    } 
                 }
             })
         })
@@ -154,8 +160,14 @@ module.exports = {
         return await Promise.all(stateResults.map(async (result) => removeID(sanitizeEntity(result, { model: strapi.models.state }))))  
     },
     getCurrencyBalance: async (ctx) => {
-        let res = await send(`${strapi.config.lamden.masternode()}/contracts/currency/balances?key=${ctx.params.key}`)
-        return res
+        if (!ctx.params.key) return {value: null}
+        let result = await strapi.query('current-state').model.findOne({ 
+            contractName: 'currency',
+            variableName:  'balances',
+            key: ctx.params.key
+        }, { "id": 0, "_id": 0, "__v": 0})
+
+        return {value: result ? result.value : null }
     },
     getTotalContracts: async () => {
         try{
