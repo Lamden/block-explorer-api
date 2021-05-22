@@ -112,14 +112,10 @@ module.exports = {
             variableName:  ctx.params.variableName,
             key: ctx.params.key
         }, { "id": 0, "_id": 0, "__v": 0})
-
-        console.log(result)
         return {value: result ? result.value : null }
     },
     getKeys: async (ctx) => {
         const { body } = ctx.request
-        console.log(strapi.models)
-
         if (!Array.isArray(body)) return {}
 
         let stateQueries = body.map(job => {

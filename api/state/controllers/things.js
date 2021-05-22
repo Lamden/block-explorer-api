@@ -219,7 +219,6 @@ module.exports = {
         let sanny = removeID(sanitizeEntity(thingResult, { model: strapi.models.state }))
 
         if (sanny){
-            console.log('in here?')
             await addMeta(
                 sanny, 
                 contractName,
@@ -259,7 +258,6 @@ module.exports = {
         let results = await strapi.query('state').model
             .aggregate([facet])
             .collation(collation)
-        console.log(results)
         let returnList =  await Promise.all(results[0].data.map(async (result) => {
             let sanny = removeID(sanitizeEntity(result, { model: strapi.models.state }))
             await addMeta(
