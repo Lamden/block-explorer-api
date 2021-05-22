@@ -304,6 +304,36 @@ const databaseLoader = () => {
 									}
 	
 									await state.save();
+
+									// determine the stamps costs for each contracts methods and store the min, max, average and stats
+									let currState = await models.CurrentState.findOne({
+										rawKey: s.key
+									})
+
+									if (!currState){
+										await new models.CurrentState({
+											rawKey: s.key,
+											contractName: s.key.split(":")[0].split(".")[0],
+											variableName: s.key.split(":")[0].split(".")[1],
+											key: s.key.split(/:(.+)/)[1],
+											value: s.value,
+											blockNum: blockInfo.number,
+											subBlockNum: sb.subblock,
+											txHash: tx.hash
+										}).save()
+									}else{
+										// Only update the current state if this update is at a higher block/subblock
+										if  (blockInfo.number > currState.blockNum ||  
+											(blockInfo.number === currState.blockNum && sb.subblock > blockInfo.subBlockNum)
+											){
+												await models.CurrentState.updateOne({rawKey: s.key}, {
+													value: s.value,
+													blockNum: blockInfo.number,
+													subBlockNum: sb.subblock,
+													txHash: tx.hash
+												});
+											}
+									}
 								})
 							}
 							// determine the stamps costs for each contracts methods and store the min, max, average and stats

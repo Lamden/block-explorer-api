@@ -90,6 +90,17 @@ var stamps = new mongoose.Schema({
     total: Number
 });
 
+var currentState = new mongoose.Schema({
+    rawKey: String,
+    contractName: String,
+    variableName: String,
+    key: String,
+    value: mongoose.Schema.Types.Mixed,
+    blockNum: Number,
+    subBlockNum: Number,
+    txHash: String
+}); 
+
 var Blocks = mongoose.model('Blocks', blocks, 'blocks');
 var Subblocks = mongoose.model('Subblocks', subblocks, 'subblocks');
 var Transactions =mongoose.model('Transactions', transactions, 'transactions');
@@ -97,5 +108,6 @@ var State = mongoose.model('State', state, 'state');
 var SubblockSigs = mongoose.model('SubblockSigs', subblockSigs, 'subblockSigs'); 
 var Contracts = mongoose.model('Contracts', contracts, 'contracts'); 
 var Stamps = mongoose.model('Stamps', stamps, 'stamps'); 
+var CurrentState = mongoose.model('CurrentState', currentState, 'currentState'); 
 
-module.exports = () => ({Blocks, Subblocks, Transactions, State, SubblockSigs, Stamps, Contracts});
+module.exports = () => ({Blocks, Subblocks, Transactions, State, SubblockSigs, Stamps, Contracts, CurrentState});

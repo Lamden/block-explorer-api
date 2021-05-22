@@ -1,0 +1,52 @@
+{
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/current-states",
+      "handler": "current-state.find",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/current-states/count",
+      "handler": "current-state.count",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/current-states/:id",
+      "handler": "current-state.findOne",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/current-states",
+      "handler": "current-state.create",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/current-states/:id",
+      "handler": "current-state.update",
+      "config": {
+        "policies": []
+      }
+    },
+    {
+      "method": "DELETE",
+      "path": "/current-states/:id",
+      "handler": "current-state.delete",
+      "config": {
+        "policies": []
+      }
+    }
+  ]
+}

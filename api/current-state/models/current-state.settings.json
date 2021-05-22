@@ -1,0 +1,37 @@
+{
+  "kind": "collectionType",
+  "collectionName": "currentState",
+  "info": {
+    "name": "current-state"
+  },
+  "options": {
+    "increments": true,
+    "timestamps": true
+  },
+  "attributes": {
+    "rawKey": {
+      "type": "text"
+    },
+    "contractName": {
+      "type": "string"
+    },
+    "variableName": {
+      "type": "string"
+    },
+    "key": {
+      "type": "text"
+    },
+    "value": {
+      "type": "json"
+    },
+    "blockNum": {
+      "type": "biginteger"
+    },
+    "subBlockNum": {
+      "type": "integer"
+    },
+    "txHash": {
+      "type": "string"
+    }
+  }
+}
