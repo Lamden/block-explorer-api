@@ -24,6 +24,7 @@ const parseJSON = (obj, key) => {
 module.exports = {
     find: async ctx => {
         const count = await strapi.query('transactions').count()
+        console.log(count)
         let limit = parseInt(ctx.query.limit) || 100
         let sort = parseInt(ctx.query.sort) || -1
         const offset = parseInt(ctx.query.offset) || 0
