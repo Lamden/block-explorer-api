@@ -204,14 +204,12 @@ module.exports = {
         }
     },
     getTopWallets: async (ctx) => {
-        console.log("Get Wallets 2!")
         let reclimit = parseInt(ctx.query.limit) || 20
         let offset = parseInt(ctx.query.offset) || 0;
         let reverse = -1
         if (typeof ctx.query.reverse !== 'undefined') {
             if (ctx.query.reverse === 'true') reverse = 1
         }
-        console.log({reclimit, offset, reverse})
         let match = { "$match" : {"contractName" : "currency", "variableName" : "balances", "key" : {"$not" : /.*:.*/}}}
         let unwind = { "$unwind" : "$value"}
         let project1 = { "$project" : { "fixed" : { "$convert" : { "input" : "$value.__fixed__", "to" : "decimal"}}, "key" : "$key", "value" : "$value", "_id": 0}}
@@ -229,8 +227,6 @@ module.exports = {
         let results = await strapi.query('current-state').model
             .aggregate([facet])
             .collation(collation)
-
-        results[0].data.map(data => console.log(data.value))
 
         return {
             data: results[0].data,
