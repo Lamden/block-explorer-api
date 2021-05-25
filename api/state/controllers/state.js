@@ -173,7 +173,7 @@ module.exports = {
             return 0;
         }
     },
-    getTopWallets: async (ctx) => {
+    getTopWallets_old: async (ctx) => {
         let reclimit = parseInt(ctx.query.limit) || 20
         let offset = parseInt(ctx.query.offset) || 0;
         let reverse = -1
@@ -197,6 +197,40 @@ module.exports = {
         let results = await strapi.query('state').model
             .aggregate([facet])
             .collation(collation)
+
+        return {
+            data: results[0].data,
+            count: results[0].count[0] ? results[0].count[0].count : 0
+        }
+    },
+    getTopWallets: async (ctx) => {
+        console.log("Get Wallets 2!")
+        let reclimit = parseInt(ctx.query.limit) || 20
+        let offset = parseInt(ctx.query.offset) || 0;
+        let reverse = -1
+        if (typeof ctx.query.reverse !== 'undefined') {
+            if (ctx.query.reverse === 'true') reverse = 1
+        }
+        console.log({reclimit, offset, reverse})
+        let match = { "$match" : {"contractName" : "currency", "variableName" : "balances", "key" : {"$not" : /.*:.*/}}}
+        let unwind = { "$unwind" : "$value"}
+        let project1 = { "$project" : { "fixed" : { "$convert" : { "input" : "$value.__fixed__", "to" : "decimal"}}, "key" : "$key", "value" : "$value", "_id": 0}}
+        let project2 = { "$project" : { "key" : "$key", "value" : { "$ifNull" : ["$fixed", "$value"]}}}
+        let project3 = { "$project" : { "key" : "$key", "value" : { "$convert" : { "input" : "$value", "to" : "string"}}}}
+        let sort1 = { "$sort" : { "value" : -1.0}}
+        var skip = { $skip: offset }
+        var limit = { $limit: reclimit}
+        let count = { $count : "count"}
+        let dataPipeline = [match, unwind, project1, project2, project3, sort1, skip, limit]
+        let countPipeline = [match, unwind, project1, project2, project3, sort1, count]
+        let facet = { $facet: {data: dataPipeline, "count": countPipeline}}
+        let collation = { locale : "en_US", numericOrdering : true }
+
+        let results = await strapi.query('current-state').model
+            .aggregate([facet])
+            .collation(collation)
+
+        results[0].data.map(data => console.log(data.value))
 
         return {
             data: results[0].data,
