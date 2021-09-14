@@ -12,7 +12,6 @@
   "attributes": {
     "hash": {
       "type": "string",
-      "unique": true,
       "required": true
     },
     "stampsUsed": {
