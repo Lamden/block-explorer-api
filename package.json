@@ -6,7 +6,7 @@
     "scripts": {
         "develop": "strapi develop",
         "start:dev": "NODE_OPTIONS=--max_old_space_size=12288 DEBUG_ON=yes npm run develop",
-        "start:prod": "npm run build && NODE_OPTIONS=--max_old_space_size=12288 DEBUG_ON=yes npm run start",
+        "start:prod": "sudo service mongod restart && npm run build && NODE_OPTIONS=--max_old_space_size=12288 DEBUG_ON=yes npm run start",
         "start:dev:reparse": "RE_PARSE_BLOCKS=yes DEBUG_ON=yes npm run develop",
         "start": "strapi start",
         "build": "strapi build",
