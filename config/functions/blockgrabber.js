@@ -381,6 +381,7 @@ const databaseLoader = () => {
 		return new Promise(resolver => {
 			setTimeout(async () => {
 				const block_res = await sendBlockRequest(`${strapi.config.lamden.masternode()}${route_getBlockNum}${blockNum}`);
+				block_res.id = blockNum
 				resolver(block_res);
 			}, timedelay)
 		})
@@ -526,13 +527,17 @@ const databaseLoader = () => {
                         for (let blockData of processed) {
 							// If any blocks are malformed then
 							// 1) Don't process it
-							// 2) Stop processig any more block data
-							// 3) Check again in 30000 seconds
                             if (malformedBlock(blockData)) {
 								console.log({blockData})
-                                console.log(`Malformed Block, trying again in 30 Seconds`)
-                                timerId = setTimeout(checkForBlocks, 30000);
-                                break
+								await new models.Blocks({ 
+									rawBlock: JSON.stringify(blockInfo),
+									blockNum: blockInfo.id,
+									hash: "malformedBlock",
+									previous: "malformedBlock",
+									numOfSubBlocks: 0,
+									numOfTransactions: 0,
+									transactions: JSON.stringify([])
+								}).save()				
                             }else{
 								// If the block is fine process it
                                 await processBlock(blockData);
