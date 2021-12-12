@@ -530,14 +530,15 @@ const databaseLoader = () => {
                             if (malformedBlock(blockData)) {
 								console.log({blockData})
 								await new models.Blocks({ 
-									rawBlock: JSON.stringify(blockInfo),
-									blockNum: blockInfo.id,
+									rawBlock: JSON.stringify(blockData),
+									blockNum: blockData.id,
 									hash: "malformedBlock",
 									previous: "malformedBlock",
 									numOfSubBlocks: 0,
 									numOfTransactions: 0,
 									transactions: JSON.stringify([])
-								}).save()				
+								}).save()	
+								console.log("saved " + blockData.id);			
                             }else{
 								// If the block is fine process it
                                 await processBlock(blockData);
